@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirAlert-TSF — Оперативний дашборд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+<style>
+:root{--bg:#0a0f1d;--bg2:#111827;--card:rgba(30,41,59,.55);--line:rgba(255,255,255,.07);
+--txt:#e8ecf4;--mut:#8b94a7;--rose:#f43f5e;--green:#10b981;--indigo:#6366f1;--cyan:#06b6d4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 80% -10%,#1b2547 0%,var(--bg) 55%) fixed,var(--bg);
+color:var(--txt);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+.mono{font-family:"JetBrains Mono",monospace}
+header{position:sticky;top:0;z-index:20;background:rgba(10,15,29,.78);backdrop-filter:blur(12px);
+border-bottom:1px solid var(--line);padding:.6rem 1rem;display:flex;gap:.7rem;align-items:center;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:.5rem;font-weight:700}
+.logo .dot{width:10px;height:10px;border-radius:50%;background:var(--rose);box-shadow:0 0 12px var(--rose);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.5}}
+.badge{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;padding:.25rem .6rem;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.badge.ok{border-color:rgba(16,185,129,.4);color:var(--green)}
+.badge.rose{border-color:rgba(244,63,94,.45);color:var(--rose)}
+.badge svg{width:13px;height:13px}
+header nav{display:flex;gap:.45rem;flex-wrap:wrap;margin-left:auto}
+header nav a{color:var(--txt);text-decoration:none;font-size:.78rem;padding:.35rem .6rem;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.02)}
+header nav a:hover{border-color:var(--rose)}
+button{background:linear-gradient(135deg,var(--rose),#be123c);color:#fff;border:none;border-radius:9px;padding:.5rem 1rem;cursor:pointer;font-size:.83rem;font-weight:600;display:inline-flex;align-items:center;gap:.4rem}
+button:hover{filter:brightness(1.12)}
+button svg{width:14px;height:14px}
+main{max-width:1240px;margin:0 auto;padding:1rem}
+.banner{display:flex;align-items:center;gap:.6rem;background:linear-gradient(90deg,rgba(244,63,94,.14),rgba(99,102,241,.12));
+border:1px solid rgba(244,63,94,.35);border-radius:12px;padding:.65rem .9rem;margin:.8rem 0;font-size:.87rem;animation:fade .5s ease both}
+.banner svg{width:18px;height:18px;color:var(--rose);flex-shrink:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.7rem;margin:.8rem 0}
+.card{background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:.8rem;transition:transform .2s,box-shadow .2s;animation:fade .5s ease both}
+.card:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 8px 28px rgba(244,63,94,.18);border-color:rgba(244,63,94,.35)}
+.card .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,.15);margin-bottom:.4rem}
+.card .ic svg{width:16px;height:16px;color:var(--cyan)}
+.card b{display:block;font-size:1.45rem;font-family:"JetBrains Mono",monospace}
+.card span{font-size:.74rem;color:var(--mut)}
+.card small{font-size:.72rem;font-weight:600}
+.up{color:var(--green)}.down{color:var(--rose)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:.8rem}
+section.chart{background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:.8rem;transition:box-shadow .2s;animation:fade .5s ease both}
+section.chart:hover{box-shadow:0 6px 24px rgba(6,182,212,.1)}
+section.chart h2{font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+section.chart h2 .tools{display:flex;gap:.35rem;align-items:center}
+.desc{font-size:.78rem;color:var(--mut);margin:.35rem 0 .5rem;line-height:1.45}
+svg{width:100%;height:auto;display:block}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.45rem 0}
+.chip{font-size:.74rem;border:1px solid var(--line);border-radius:12px;padding:.22rem .6rem;cursor:pointer;user-select:none;background:rgba(255,255,255,.02)}
+.chip:hover{border-color:var(--rose)}
+.chip.off{opacity:.35;text-decoration:line-through}
+select{background:#1e293b;color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:.25rem .5rem;font-size:.78rem}
+input[type=range]{width:100%;accent-color:var(--rose)}
+table{width:100%;border-collapse:collapse;font-size:.79rem}
+th,td{border:1px solid var(--line);padding:.35rem .5rem;text-align:right;font-family:"JetBrains Mono",monospace}
+th:first-child,td:first-child{text-align:left;font-family:Inter,sans-serif}
+th{cursor:pointer;user-select:none;background:rgba(255,255,255,.03)}
+th:hover{color:var(--rose)}
+td.win{background:rgba(16,185,129,.16);font-weight:700;color:var(--green)}
+tr.hl td{background:rgba(99,102,241,.15)}
+footer{margin-top:1.5rem;padding:1rem;text-align:center;color:var(--mut);font-size:.8rem;border-top:1px solid var(--line)}
+footer a{color:var(--rose)}
+.tip{position:fixed;pointer-events:none;background:rgba(10,15,29,.95);border:1px solid var(--rose);border-radius:8px;padding:.4rem .6rem;font-size:.75rem;display:none;z-index:50;white-space:pre;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.fs{cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:6px;padding:.15rem .5rem;font-size:.8rem}
+section.chart:fullscreen{background:var(--bg);padding:1.5rem;overflow:auto}
+section.chart:fullscreen svg{max-height:80vh}
+.presets{display:flex;gap:.35rem;margin-bottom:.4rem;flex-wrap:wrap}
+.presets button{padding:.25rem .7rem;font-size:.76rem;background:#1e293b;border:1px solid var(--line)}
+.presets button.on{background:var(--rose);border-color:var(--rose)}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}header nav{display:none}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo"><span class="dot"></span>AirAlert-TSF</div>
+<span class="badge ok"><i data-lucide="activity"></i><span id="b-backend">backend</span></span>
+<span class="badge rose"><i data-lucide="map-pin"></i><span id="b-region">Київ · горизонт +3 год</span></span>
+<nav>
+<a href="#s-cards">KPI</a><a href="#s-pr">PR/ROC</a><a href="#s-ts">Часовий ряд</a>
+<a href="#s-cm">Матриця</a><a href="#s-oc">Onset</a><a href="#s-table">Таблиця</a>
+</nav>
+<button id="csv-top"><i data-lucide="download"></i>CSV</button>
+</header>
+<main>
+<div class="banner" id="winner"><i data-lucide="trophy"></i><span></span></div>
+<div class="chips" id="toggles"></div>
+<section id="s-cards"><div class="cards" id="cards"></div></section>
+<div class="grid">
+<section class="chart" id="s-models"><h2>1. Порівняння моделей <span class="tools"><span class="fs" data-fs="s-models">⛶</span></span></h2>
+<p class="desc">PR-AUC кожної моделі на holdout-тесті. Пунктир — prevalence (рівень випадкового вгадування). У підписах — precision, recall та F2 на робочому порозі.</p><div id="ch-models"></div></section>
+<section class="chart" id="s-pr"><h2>2. PR-криві <span class="tools"><span class="fs" data-fs="s-pr">⛶</span></span></h2>
+<p class="desc">Залежність precision від recall. Тултіп показує значення всіх увімкнених моделей в одній точці. Клік по легенді — вмикання, подвійний клік — solo-режим.</p><div id="ch-pr"></div></section>
+<section class="chart" id="s-cal"><h2>3. Калібрування <span class="tools"><span class="fs" data-fs="s-cal">⛶</span></span></h2>
+<p class="desc">Чи відповідає видана ймовірність реальній частоті тривог. Діагональ — ідеал. У легенді — Brier score (нижче — краще).</p><div id="ch-cal"></div></section>
+<section class="chart" id="s-feat"><h2>4. Важливість ознак <span class="tools"><span class="fs" data-fs="s-feat">⛶</span></span></h2>
+<p class="desc">Топ-15 за gain з LightGBM. Фільтруй за типом: лаги, вікна, сусіди, час, текстові сигнали.</p><div class="chips" id="feat-filter"></div><div id="ch-feat"></div></section>
+<section class="chart" id="s-ts" style="grid-column:1/-1"><h2>5. Прогноз у часі <span class="tools"><span class="fs" data-fs="s-ts">⛶</span></span></h2>
+<p class="desc">Рожевий фон — години фактичної тривоги. Бірюзова область — ймовірність моделі. Жовтий пунктир — робочий поріг. Наведи курсор для деталей, тягни міні-слайдер для вибору періоду.</p>
+<div class="presets" id="presets"></div>
+<div class="zoombar" style="margin-bottom:.35rem"><button id="zin">+</button><button id="zout">−</button><button id="zreset">скинути</button></div>
+<div id="ch-ts"></div><div id="ch-mini" style="margin-top:.3rem"></div></section>
+<section class="chart" id="s-dist"><h2>6. Розподіл ймовірностей <span class="tools"><select id="sel-dist"></select><span class="fs" data-fs="s-dist">⛶</span></span></h2>
+<p class="desc">Гістограми ймовірностей для спокійних (синій) і тривожних (рожевий) годин обраної моделі. Жовта лінія — поточний поріг зі слайдера.</p><div id="ch-dist"></div></section>
+<section class="chart" id="s-cm"><h2>7. Confusion matrix <span class="tools"><select id="sel-cm"></select><span class="fs" data-fs="s-cm">⛶</span></span></h2>
+<p class="desc">Теплова карта для обраної моделі. Рухай повзунок порогу — матриця, точність і rates перераховуються наживо.</p>
+<div style="display:flex;gap:.6rem;align-items:center;margin:.3rem 0"><input type="range" id="thr" min="0.05" max="0.95" step="0.05" value="0.15"><b class="mono" id="thr-v">0.15</b></div>
+<div id="ch-cm"></div><p class="hint mono" id="cm-stats" style="font-size:.78rem;margin-top:.3rem"></p></section>
+<section class="chart" id="s-oc"><h2>8. Onset vs Continuation <span class="tools"><span class="fs" data-fs="s-oc">⛶</span></span></h2>
+<p class="desc">PR-AUC окремо для початку тривоги зі спокою (onset, яскраве) і продовження (cont, тьмяне). Справжня цінність моделі — саме onset.</p><div id="ch-oc"></div></section>
+<section class="chart" id="s-roc"><h2>9. ROC-криві <span class="tools"><span class="fs" data-fs="s-roc">⛶</span></span></h2>
+<p class="desc">Загальна роздільна здатність. Діагональ — випадкове вгадування. У легенді — ROC-AUC.</p><div id="ch-roc"></div></section>
+<section class="chart" id="s-brier"><h2>10. Brier score <span class="tools"><span class="fs" data-fs="s-brier">⛶</span></span></h2>
+<p class="desc">Середньоквадратична похибка ймовірностей. Нижче — краще; 0.25 — рівень константного прогнозу при prevalence 0.5.</p><div id="ch-brier"></div></section>
+</div>
+<section class="chart" id="s-table" style="margin-top:.8rem"><h2>Детальні метрики (клік по колонці — сортування, зелене — найкраще)</h2>
+<p style="margin:.4rem 0"><button id="csv"><i data-lucide="download"></i>Експорт CSV</button></p>
+<div style="overflow-x:auto"><table id="tbl"></table></div></section>
+<section class="chart" id="s-meta" style="margin-top:.8rem"><h2>Метадані запуску</h2><div id="meta" style="font-size:.85rem;line-height:1.7"></div></section>
+</main>
+<footer>AirAlert-TSF · навчальний прогноз, не замінює офіційні сповіщення · дані: <a href="https://github.com/Vadimkin/ukrainian-air-raid-sirens-dataset">Vadimkin dataset</a></footer>
+<div class="tip" id="tip"></div>
+<script>
+const DATA = __DATA__;
+const NS = "http://www.w3.org/2000/svg";
+const W = 560, H = 300, P = {l: 52, r: 12, t: 12, b: 34};
+const hidden = new Set();
+const tip = document.getElementById("tip");
+function el(n, a, p) { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+function txt(p, x, y, s, size, fill, anchor) { const t = el("text", {x, y, fill: fill || "#9aa3b2", "font-size": size || 10, "text-anchor": anchor || "start"}, p); t.textContent = s; return t; }
+function showTip(x, y, s) { tip.style.display = "block"; tip.style.left = x + 12 + "px"; tip.style.top = y + 12 + "px"; tip.textContent = s; }
+function hideTip() { tip.style.display = "none"; }
+function rng(a, b) { return a === b ? [a - 1, b + 1] : [a, b]; }
+function frame(svg, X, Y, x0, x1, y0, y1, xl, yl) {
+  for (let i = 0; i <= 4; i++) {
+    const v = y0 + (y1 - y0) * i / 4;
+    el("line", {x1: P.l, x2: W - P.r, y1: Y(v), y2: Y(v), stroke: "#2a2a4a", "stroke-dasharray": "3,3"}, svg);
+    txt(svg, P.l - 5, Y(v) + 4, v.toFixed(2), 10, "#8b94a7", "end");
+  }
+  txt(svg, W / 2, H - 4, xl, 11); txt(svg, 12, H / 2, yl, 11).setAttribute("transform", `rotate(-90 12 ${H/2})`);
+}
+function smooth(pts) {
+  if (pts.length < 3) return "M" + pts.map(p => p.join(",")).join(" L");
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)},${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)},${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+function multiLine(id, series, xl, yl, extra) {
+  // series: [{name,x[],y[],color}] — smooth curves + shared tooltip
+  const d = document.getElementById(id); d.innerHTML = "";
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`}, d);
+  const vis = series.filter(s => !hidden.has(s.name));
+  const xs = vis.flatMap(s => s.x), ys = vis.flatMap(s => s.y);
+  let [a, b] = rng(Math.min(...xs, 0), Math.max(...xs, 1)), [c, q] = rng(Math.min(...ys, 0), Math.max(...ys, 1));
+  const X = v => P.l + (v - a) / (b - a) * (W - P.l - P.r);
+  const Y = v => H - P.b - (v - c) / (q - c) * (H - P.t - P.b);
+  frame(svg, X, Y, a, b, c, q, xl, yl);
+  (extra || []).forEach(e => {
+    if (e.dash) el("line", {x1: X(e.x0), x2: X(e.x1), y1: Y(e.y), y2: Y(e.y), stroke: e.color, "stroke-dasharray": "6,4", "stroke-width": 1.5}, svg);
+    else el("line", {x1: X(e.x0), x2: X(e.x1), y1: Y(e.y0), y2: Y(e.y1), stroke: e.color, "stroke-dasharray": "6,4"}, svg);
+  });
+  const paths = vis.map(s => {
+    const pts = s.x.map((x, i) => [X(x), Y(s.y[i])]);
+    const pth = el("path", {d: smooth(pts), fill: "none", stroke: s.color, "stroke-width": 2.2, "stroke-linejoin": "round"}, svg);
+    return {s, pth};
+  });
+  const cross = el("line", {y1: P.t, y2: H - P.b, stroke: "#f43f5e", "stroke-width": 1, visibility: "hidden"}, svg);
+  svg.addEventListener("mousemove", e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) * (W / r.width);
+    let bx = null, bd = 1e18;
+    vis.forEach(s => s.x.forEach(x => { const dd = Math.abs(X(x) - mx); if (dd < bd) { bd = dd; bx = x; } }));
+    if (bx === null) return;
+    cross.setAttribute("x1", X(bx)); cross.setAttribute("x2", X(bx)); cross.setAttribute("visibility", "visible");
+    const rows = vis.map(s => {
+      let bi = 0, bdd = 1e18;
+      s.x.forEach((x, i) => { const dd = Math.abs(x - bx); if (dd < bdd) { bdd = dd; bi = i; } });
+      return `${s.name}: ${s.y[bi].toFixed(3)}`;
+    });
+    showTip(e.clientX, e.clientY, `x = ${(+bx).toFixed(3)}\n` + rows.join("\n"));
+    paths.forEach(({s, pth}) => pth.setAttribute("stroke-width", 2.2));
+  });
+  svg.addEventListener("mouseleave", () => { hideTip(); cross.setAttribute("visibility", "hidden"); });
+}
+function hbar(id, items) {
+  const d = document.getElementById(id); d.innerHTML = "";
+  const vis = items.filter(i => !hidden.has(i.label));
+  const h = Math.max(120, vis.length * 26 + 50);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${h}`}, d);
+  const mx = Math.max(...vis.map(i => i.value), 1e-9);
+  vis.forEach((it, i) => {
+    const y = 14 + i * 26, w = Math.max(2, (W - 210) * it.value / mx);
+    const r = el("rect", {x: 200, y, width: w, height: 16, fill: it.color, rx: 4}, svg);
+    r.addEventListener("mousemove", e => showTip(e.clientX, e.clientY, `${it.label}\n${it.value.toFixed(4)}${it.sub ? "\n" + it.sub : ""}`));
+    r.addEventListener("mouseleave", hideTip);
+    txt(svg, 194, y + 13, it.label, 11, "#e8ecf4", "end");
+    txt(svg, 206 + w, y + 13, it.value.toFixed(3) + (it.sub ? "  " + it.sub : ""), 10);
+  });
+}
+const MODELS = Object.keys(DATA.models);
+function legendRow(sel) {
+  return MODELS.map(m => `<span class="chip" data-m="${m}" style="border-color:${DATA.colors[m]}">${m}</span>`).join("");
+}
+function bindLegend(root) {
+  root.querySelectorAll(".chip[data-m]").forEach(c => {
+    if (hidden.has(c.dataset.m)) c.classList.add("off");
+    c.addEventListener("click", () => {
+      const m = c.dataset.m;
+      hidden.has(m) ? hidden.delete(m) : hidden.add(m);
+      document.querySelectorAll(`.chip[data-m="${m}"]`).forEach(x => x.classList.toggle("off", hidden.has(m)));
+      drawAll();
+    });
+    c.addEventListener("dblclick", () => {
+      const m = c.dataset.m, solo = !(hidden.size === MODELS.length - 1 && !hidden.has(m));
+      hidden.clear();
+      if (solo) MODELS.forEach(x => { if (x !== m) hidden.add(x); });
+      document.querySelectorAll(".chip[data-m]").forEach(x => x.classList.toggle("off", hidden.has(x.dataset.m)));
+      drawAll();
+    });
+  });
+}
+document.querySelectorAll("#s-models h2,#s-pr h2,#s-cal h2,#s-roc h2").forEach(h => {
+  const d = document.createElement("div"); d.className = "chips"; d.innerHTML = legendRow(); h.after(d); bindLegend(d);
+});
+// toggles + fullscreen
+document.querySelectorAll("section.chart").forEach(s => {
+  const h = s.querySelector("h2");
+  if (!h.querySelector("[data-fs]")) {
+    const b = document.createElement("span"); b.className = "fs"; b.dataset.fs = s.id; b.textContent = "⛶"; h.appendChild(b);
+  }
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-fs]"); if (!b) return;
+  const s = document.getElementById(b.dataset.fs);
+  document.fullscreenElement ? document.exitFullscreen() : s.requestFullscreen();
+});
+const tg = document.getElementById("toggles");
+document.querySelectorAll("section.chart").forEach(s => {
+  const c = document.createElement("label"); c.className = "chip";
+  c.innerHTML = `<input type="checkbox" checked style="accent-color:#f43f5e"> ${s.querySelector("h2").childNodes[0].textContent.slice(0, 30)}`;
+  c.querySelector("input").addEventListener("change", e => s.style.display = e.target.checked ? "" : "none");
+  tg.appendChild(c);
+});
+// KPI cards
+const MM = DATA.models.main.metrics, MT = DATA.meta;
+const dlt = (MM.pr_auc - DATA.models.persistence.metrics.pr_auc);
+const cards = [
+  ["target", "PR-AUC (main)", MM.pr_auc.toFixed(3), `<span class="up">+${dlt.toFixed(3)} vs persistence</span>`],
+  ["crosshair", "Precision", MM.precision.toFixed(3), "на робочому порозі"],
+  ["activity", "Recall", MM.recall.toFixed(3), "пропуск гірший за хибну тривогу"],
+  ["gauge", "F2", MM.f2.toFixed(3), `поріг ${MM.threshold}`],
+  ["check-circle-2", "Brier", MM.brier.toFixed(3), "нижче — краще"],
+  ["bell", "Prevalence test", MT.prevalence.test, "базовий рівень PR-AUC"],
+];
+document.getElementById("cards").innerHTML = cards.map(([ic, a, b, s]) =>
+  `<div class="card"><div class="ic"><i data-lucide="${ic}"></i></div><b>${b}</b><span>${a}</span><br><small>${s}</small></div>`).join("");
+document.getElementById("b-backend").textContent = MT.backend;
+document.getElementById("b-region").textContent = `${MT.target === "Kyiv" ? "Київ" : MT.target} · горизонт +${MT.horizon_h} год`;
+document.querySelector("#winner span").innerHTML =
+  `<b>Main</b> перевершує Persistence на <b class="mono">+${dlt.toFixed(4)} PR-AUC</b> (парний 95% CI не містить 0 — див. метрики)`;
+function drawModels() {
+  hbar("ch-models", MODELS.map(m => ({label: m, value: DATA.models[m].metrics.pr_auc, color: DATA.colors[m],
+    sub: `p=${DATA.models[m].metrics.precision.toFixed(2)} r=${DATA.models[m].metrics.recall.toFixed(2)} f2=${DATA.models[m].metrics.f2.toFixed(2)}`})));
+}
+function drawPR() {
+  multiLine("ch-pr", MODELS.map(m => ({name: `${m} (${DATA.models[m].metrics.pr_auc.toFixed(3)})`,
+    x: DATA.models[m].pr.x, y: DATA.models[m].pr.y, color: DATA.colors[m]})), "recall", "precision",
+    [{x0: 0, x1: 1, y: MT.prevalence.test, color: "#8b94a7", dash: 1}]);
+}
+function drawCal() {
+  multiLine("ch-cal", MODELS.map(m => ({name: `${m} (Brier ${DATA.models[m].metrics.brier.toFixed(3)})`,
+    x: DATA.models[m].cal.x, y: DATA.models[m].cal.y, color: DATA.colors[m]})), "середній прогноз", "частка позитивів",
+    [{x0: 0, x1: 1, y0: 0, y1: 1, color: "#8b94a7", dash: 0}]);
+}
+// calibration diagonal needs y=x line: draw manually via extra as segment
+const _drawCal = drawCal;
+function drawROC() {
+  multiLine("ch-roc", MODELS.map(m => ({name: `${m} (${DATA.models[m].metrics.roc_auc.toFixed(3)})`,
+    x: DATA.models[m].roc.x, y: DATA.models[m].roc.y, color: DATA.colors[m]})), "FPR", "TPR",
+    [{x0: 0, x1: 1, y0: 0, y1: 1, color: "#8b94a7", dash: 0}]);
+}
+// features + filter
+const TCOL = {lags: "#f43f5e", windows: "#feca57", neighbors: "#06b6d4", time: "#10b981", text: "#a78bfa"};
+const TNAME = {all: "Всі", lags: "Лаги", windows: "Вікна", neighbors: "Сусідні регіони", time: "Часові", text: "Текстові"};
+let featF = "all";
+const ff = document.getElementById("feat-filter");
+ff.innerHTML = Object.keys(TNAME).map(k => `<span class="chip" data-f="${k}">${TNAME[k]}</span>`).join("");
+ff.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  featF = c.dataset.f;
+  ff.querySelectorAll(".chip").forEach(x => x.classList.toggle("off", x !== c));
+  drawFeat();
+}));
+function drawFeat() {
+  const items = DATA.features.filter(f => featF === "all" || f.type === featF)
+    .map(f => ({label: f.name, value: f.gain, color: TCOL[f.type] || "#888", sub: TNAME[f.type] || f.type}));
+  hbar("ch-feat", items);
+}
+// time series: bands + gradient + crosshair + presets + minimap
+let view = null, selModel = "main";
+const TS = DATA.series.t, PY = DATA.models.main.proba, YY = DATA.series.y;
+function spans(a, b) {
+  const n = TS.length;
+  view = [Math.max(0, a), Math.min(n - 1, b)];
+  drawTS(); drawMini();
+}
+[["24 год", 24], ["3 дні", 72], ["7 днів", 168], ["Весь період", TS.length]].forEach(([s, k]) => {
+  const b = document.createElement("button"); b.textContent = s;
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#presets button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    spans(TS.length - k, TS.length - 1);
+  });
+  document.getElementById("presets").appendChild(b);
+});
+function drawTS() {
+  const d = document.getElementById("ch-ts"); d.innerHTML = "";
+  const n = TS.length;
+  if (!view) view = [0, n - 1];
+  const TH = DATA.models.main.metrics.threshold;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`}, d);
+  const X = i => P.l + (i - view[0]) / Math.max(1, view[1] - view[0]) * (W - P.l - P.r);
+  const Y = v => H - P.b - v * (H - P.t - P.b);
+  for (let i = 0; i <= 4; i++) {
+    el("line", {x1: P.l, x2: W - P.r, y1: Y(i / 4), y2: Y(i / 4), stroke: "#2a2a4a", "stroke-dasharray": "3,3"}, svg);
+    txt(svg, P.l - 5, Y(i / 4) + 4, (i / 4).toFixed(2), 10, "#8b94a7", "end");
+  }
+  txt(svg, W / 2, H - 4, "час", 11);
+  // alert bands (merged)
+  let s = -1;
+  const flush = e => {
+    if (s >= 0) el("rect", {x: X(Math.max(s, view[0])), y: P.t, width: Math.max(2, X(Math.min(e, view[1])) - X(Math.max(s, view[0]))), height: H - P.t - P.b, fill: "rgba(244,63,94,.16)"}, svg);
+    s = -1;
+  };
+  for (let i = view[0]; i <= view[1]; i++) { if (YY[i]) { if (s < 0) s = i; } else flush(i - 1); }
+  flush(view[1]);
+  const gid = "g" + Math.floor(Math.random() * 1e9);
+  const defs = el("defs", {}, svg);
+  const gr = el("linearGradient", {id: gid, x1: 0, y1: 0, x2: 0, y2: 1}, defs);
+  el("stop", {offset: "0%", "stop-color": "#06b6d4", "stop-opacity": .55}, gr);
+  el("stop", {offset: "100%", "stop-color": "#06b6d4", "stop-opacity": .05}, gr);
+  const pts = [];
+  for (let i = view[0]; i <= view[1]; i++) pts.push([X(i), Y(PY[i])]);
+  el("path", {d: smooth(pts) + `L${X(view[1]).toFixed(1)},${Y(0).toFixed(1)}L${X(view[0]).toFixed(1)},${Y(0).toFixed(1)}Z`, fill: `url(#${gid})`, stroke: "none"}, svg);
+  el("path", {d: smooth(pts), fill: "none", stroke: "#06b6d4", "stroke-width": 2, "stroke-linejoin": "round"}, svg);
+  el("line", {x1: P.l, x2: W - P.r, y1: Y(TH), y2: Y(TH), stroke: "#feca57", "stroke-dasharray": "6,4", "stroke-width": 1.5}, svg);
+  const cross = el("line", {y1: P.t, y2: H - P.b, stroke: "#f43f5e", visibility: "hidden"}, svg);
+  const dot = el("circle", {r: 4, fill: "#f43f5e", visibility: "hidden"}, svg);
+  svg.addEventListener("mousemove", e => {
+    const r = svg.getBoundingClientRect();
+    const i = Math.round(view[0] + (e.clientX - r.left) / r.width * (W - P.l - P.r) / (W - P.l - P.r) * (view[1] - view[0]));
+    const k = Math.max(view[0], Math.min(view[1], i));
+    cross.setAttribute("x1", X(k)); cross.setAttribute("x2", X(k)); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", X(k)); dot.setAttribute("cy", Y(PY[k])); dot.setAttribute("visibility", "visible");
+    const dt = new Date(TS[k]);
+    showTip(e.clientX, e.clientY, `${dt.toLocaleString("uk-UA")}\nймовірність: ${PY[k].toFixed(3)}\nфакт: ${YY[k] ? "ТРИВОГА" : "спокій"}`);
+  });
+  svg.addEventListener("mouseleave", () => { hideTip(); cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); });
+  let drag = null;
+  svg.addEventListener("mousedown", e => drag = e.clientX);
+  svg.addEventListener("mouseup", e => {
+    if (drag === null) return;
+    const r = svg.getBoundingClientRect(), span = view[1] - view[0];
+    const a = view[0] + Math.round(Math.min(drag, e.clientX) / r.width * span);
+    const b = view[0] + Math.round(Math.max(drag, e.clientX) / r.width * span);
+    drag = null;
+    if (b - a > 10) spans(a, b);
+  });
+  svg.addEventListener("dblclick", () => spans(0, n - 1));
+  svg.addEventListener("wheel", e => {
+    e.preventDefault();
+    const span = view[1] - view[0], ns = Math.min(n - 1, Math.max(20, Math.round(span * (e.deltaY > 0 ? 1.2 : .8))));
+    spans(Math.max(0, Math.min(view[0], n - 1 - ns)), view[0] + ns);
+  }, {passive: false});
+  const info = document.getElementById("ts-info");
+  if (info) info.textContent = "";
+  const old = document.getElementById("ts-range");
+  if (old) old.remove();
+  const p = document.createElement("p"); p.id = "ts-range"; p.className = "desc";
+  p.textContent = `діапазон: ${TS[view[0]]} … ${TS[view[1]]} (${view[1] - view[0] + 1} год)`;
+  d.after(p);
+}
+function drawMini() {
+  const d = document.getElementById("ch-mini"); d.innerHTML = "";
+  const n = TS.length, h = 56;
+  const svg = el("svg", {viewBox: `0 0 ${W} ${h}`}, d);
+  const X = i => 4 + i / (n - 1) * (W - 8), Y = v => h - 4 - v * (h - 8);
+  const pts = [];
+  for (let i = 0; i < n; i += 2) pts.push([X(i), Y(PY[i])]);
+  el("path", {d: smooth(pts), fill: "none", stroke: "#6366f1", "stroke-width": 1}, svg);
+  const rx = X(view[0]), rw = Math.max(6, X(view[1]) - X(view[0]));
+  const win = el("rect", {x: rx, y: 2, width: rw, height: h - 4, fill: "rgba(244,63,94,.18)", stroke: "#f43f5e", rx: 4, style: "cursor:ew-resize"}, svg);
+  let mv = null;
+  const pos = e => { const r = svg.getBoundingClientRect(); return Math.max(0, Math.min(n - 1, Math.round((e.clientX - r.left) / r.width * (n - 1)))); };
+  win.addEventListener("mousedown", e => { mv = pos(e) - view[0]; e.preventDefault(); });
+  window.addEventListener("mouseup", () => mv = null);
+  window.addEventListener("mousemove", e => {
+    if (mv === null) return;
+    const span = view[1] - view[0], a = Math.max(0, Math.min(n - 1 - span, pos(e) - mv));
+    spans(a, a + span);
+  });
+  svg.addEventListener("mousedown", e => {
+    if (e.target === win) return;
+    const c = pos(e), span = view[1] - view[0];
+    const a = Math.max(0, Math.min(n - 1 - span, Math.round(c - span / 2)));
+    spans(a, a + span);
+  });
+}
+function zoomBy(f) {
+  const n = TS.length, span = view[1] - view[0];
+  const ns = Math.min(n - 1, Math.max(20, Math.round(span * f)));
+  let a = Math.max(0, Math.min(view[0], n - 1 - ns));
+  spans(a, a + ns);
+}
+document.getElementById("zin").addEventListener("click", () => zoomBy(.7));
+document.getElementById("zout").addEventListener("click", () => zoomBy(1.4));
+document.getElementById("zreset").addEventListener("click", () => spans(0, TS.length - 1));
+// selectors drive dist + confusion
+["sel-dist", "sel-cm"].forEach(id => {
+  const s = document.getElementById(id);
+  s.innerHTML = MODELS.map(m => `<option ${m === "main" ? "selected" : ""}>${m}</option>`).join("");
+  s.addEventListener("change", () => {
+    selModel = document.getElementById("sel-dist").value;
+    document.getElementById("sel-cm").value = selModel;
+    drawDist(); drawCM();
+  });
+});
+document.getElementById("sel-cm").addEventListener("change", () => {
+  selModel = document.getElementById("sel-cm").value;
+  document.getElementById("sel-dist").value = selModel;
+  drawDist(); drawCM();
+});
+let liveThr = null;
+document.getElementById("thr").addEventListener("input", e => {
+  liveThr = parseFloat(e.target.value);
+  document.getElementById("thr-v").textContent = liveThr.toFixed(2);
+  drawDist(); drawCM();
+});
+function thrOf() { return liveThr === null ? DATA.models[selModel].metrics.threshold : liveThr; }
+function drawDist() {
+  const d = document.getElementById("ch-dist"); d.innerHTML = "";
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`}, d);
+  const P = DATA.models[selModel].proba, Y = DATA.series.y, TH = thrOf(), B = 20;
+  const h0 = new Array(B).fill(0), h1 = new Array(B).fill(0);
+  P.forEach((p, i) => { const b = Math.min(B - 1, Math.floor(p * B)); (Y[i] ? h1 : h0)[b]++; });
+  const mx = Math.max(...h0, ...h1, 1), bw = (W - P.l - P.r) / B;
+  const Yf = v => H - P.b - v / mx * (H - P.t - P.b);
+  h0.forEach((v, i) => el("rect", {x: P.l + i * bw + 1, y: Yf(v), width: bw - 2, height: H - P.b - Yf(v), fill: "#0f3460", opacity: .9}, svg));
+  h1.forEach((v, i) => el("rect", {x: P.l + i * bw + 1, y: Yf(v), width: bw - 2, height: H - P.b - Yf(v), fill: "#f43f5e", opacity: .75}, svg));
+  const X = v => P.l + v * (W - P.l - P.r);
+  el("line", {x1: X(TH), x2: X(TH), y1: P.t, y2: H - P.b, stroke: "#feca57", "stroke-width": 2}, svg);
+  txt(svg, P.l, H - 4, `0 — спокій / тривога — 1 · поріг ${TH.toFixed(2)} (${selModel})`, 11);
+}
+function drawCM() {
+  const d = document.getElementById("ch-cm"); d.innerHTML = "";
+  const P = DATA.models[selModel].proba, Y = DATA.series.y, TH = thrOf();
+  let TP = 0, TN = 0, FP = 0, FN = 0;
+  P.forEach((p, i) => { const q = p >= TH ? 1 : 0; if (q && Y[i]) TP++; else if (!q && !Y[i]) TN++; else if (q) FP++; else FN++; });
+  const N = TP + TN + FP + FN, acc = (TP + TN) / N, far = FP / Math.max(1, FP + TN), mr = FN / Math.max(1, FN + TP);
+  const svg = el("svg", {viewBox: `0 0 ${W} 250`}, d);
+  const cells = [[TN, FP], [FN, TP]], labs = [["TN", "FP"], ["FN", "TP"]];
+  const mx = Math.max(TN, FP, FN, TP, 1);
+  cells.flat().forEach((v, k) => {
+    const r = Math.floor(k / 2), c = k % 2;
+    const rc = el("rect", {x: 130 + c * 200, y: 24 + r * 88, width: 190, height: 78, fill: `rgba(244,63,94,${(.12 + .88 * v / mx).toFixed(2)})`, rx: 8}, svg);
+    rc.addEventListener("mousemove", e => showTip(e.clientX, e.clientY, `${labs[r][c]}: ${v}\n${(100 * v / N).toFixed(1)}% вибірки`));
+    rc.addEventListener("mouseleave", hideTip);
+    txt(svg, 225 + c * 200, 58 + r * 88, `${labs[r][c]}: ${v}`, 15, "#fff", "middle");
+    txt(svg, 225 + c * 200, 76 + r * 88, `${(100 * v / N).toFixed(1)}%`, 11, "#ffd9de", "middle");
+  });
+  txt(svg, 60, 68, "true спокій", 11); txt(svg, 60, 156, "true тривога", 11);
+  txt(svg, 225, 14, "pred спокій", 11, "#9aa3b2", "middle"); txt(svg, 425, 14, "pred тривога", 11, "#9aa3b2", "middle");
+  const st = document.getElementById("cm-stats");
+  st.textContent = `accuracy ${(100 * acc).toFixed(1)}% · false alarm rate ${(100 * far).toFixed(1)}% · miss rate ${(100 * mr).toFixed(1)}% · N=${N}`;
+}
+function drawOC() {
+  const d = document.getElementById("ch-oc"); d.innerHTML = "";
+  const rows = MODELS.map(m => ({m, o: DATA.models[m].metrics.onset, c: DATA.models[m].metrics.cont}));
+  const svg = el("svg", {viewBox: `0 0 ${W} ${Math.max(120, rows.length * 36 + 70)}`}, d);
+  const mx = Math.max(...rows.flatMap(r => [r.o.pr_auc, r.c.pr_auc]), 1);
+  rows.forEach((r, i) => {
+    if (hidden.has(r.m)) return;
+    const y = 16 + i * 36;
+    const ro = el("rect", {x: 160, y, width: (W - 280) * r.o.pr_auc / mx, height: 13, fill: DATA.colors[r.m], rx: 3}, svg);
+    const rc = el("rect", {x: 160, y: y + 15, width: (W - 280) * r.c.pr_auc / mx, height: 13, fill: DATA.colors[r.m], opacity: .45, rx: 3}, svg);
+    [[ro, `onset PR-AUC ${r.o.pr_auc.toFixed(3)}, n=${r.o.n}, pos_rate=${r.o.pos_rate}`],
+     [rc, `cont PR-AUC ${r.c.pr_auc.toFixed(3)}, n=${r.c.n}, pos_rate=${r.c.pos_rate}`]].forEach(([e, s]) => {
+      e.addEventListener("mousemove", ev => showTip(ev.clientX, ev.clientY, `${r.m}\n${s}`));
+      e.addEventListener("mouseleave", hideTip);
+    });
+    txt(svg, 154, y + 16, r.m, 11, "#e8ecf4", "end");
+  });
+  txt(svg, 160, Math.max(120, rows.length * 36 + 60), "яскраве — onset (зі спокою), тьмяне — continuation", 11);
+}
+function drawROC() {
+  multiLine("ch-roc", MODELS.map(m => ({name: `${m} (${DATA.models[m].metrics.roc_auc.toFixed(3)})`,
+    x: DATA.models[m].roc.x, y: DATA.models[m].roc.y, color: DATA.colors[m]})), "FPR", "TPR",
+    [{x0: 0, x1: 1, y0: 0, y1: 1, color: "#8b94a7", dash: 0}]);
+}
+function drawBrier() {
+  hbar("ch-brier", MODELS.map(m => ({label: m, value: DATA.models[m].metrics.brier, color: DATA.colors[m], sub: ""})));
+}
+function drawAll() { drawModels(); drawPR(); drawCal(); drawROC(); drawBrier(); drawFeat(); drawTS(); drawMini(); drawDist(); drawCM(); drawOC(); }
+drawAll();
+if (window.lucide) lucide.createIcons();
+// table: sortable + winner highlight
+const keys = ["pr_auc", "roc_auc", "brier", "bss", "precision", "recall", "f2", "threshold"];
+const MINWIN = {brier: 1};
+let sortK = null, sortD = 1;
+function drawTbl() {
+  const rows = MODELS.map(m => ({m, v: keys.map(k => DATA.models[m].metrics[k])}));
+  if (sortK) rows.sort((a, b) => (a.v[keys.indexOf(sortK)] - b.v[keys.indexOf(sortK)]) * sortD);
+  const best = {};
+  keys.forEach((k, j) => {
+    if (k === "threshold") return;
+    const vs = rows.map(r => r.v[j]);
+    best[k] = MINWIN[k] ? Math.min(...vs) : Math.max(...vs);
+  });
+  document.getElementById("tbl").innerHTML =
+    "<tr><th data-k=''>модель ↕</th>" + keys.map(k => `<th data-k="${k}">${k} ↕</th>`).join("") + "</tr>" +
+    rows.map(r => `<tr data-m="${r.m}"><td>${r.m}</td>` + r.v.map((v, j) =>
+      `<td class="${!hidden.has(r.m) && best[keys[j]] === v ? "win" : ""}">${v}</td>`).join("") + "</tr>").join("");
+  document.querySelectorAll("#tbl th").forEach(th => th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    if (sortK === k) sortD *= -1; else { sortK = k; sortD = 1; }
+    if (!k) { sortK = null; }
+    drawTbl();
+  }));
+  document.querySelectorAll("#tbl tr[data-m]").forEach(tr => {
+    tr.classList.toggle("hl", !hidden.has(tr.dataset.m) && hidden.size > 0);
+    tr.addEventListener("click", () => {
+      const m = tr.dataset.m;
+      hidden.has(m) ? hidden.delete(m) : hidden.add(m);
+      document.querySelectorAll(`.chip[data-m="${m}"]`).forEach(x => x.classList.toggle("off", hidden.has(m)));
+      drawAll(); drawTbl();
+    });
+  });
+}
+drawTbl();
+function dl(name, fn) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([fn()], {type: "text/csv"}));
+  a.download = name; a.click();
+}
+const csvRows = () => {
+  const rows = [["model", ...keys]];
+  MODELS.forEach(m => rows.push([m, ...keys.map(k => DATA.models[m].metrics[k])]));
+  return rows.map(r => r.join(",")).join("\n");
+};
+document.getElementById("csv").addEventListener("click", () => dl("airalert_metrics.csv", csvRows));
+document.getElementById("csv-top").addEventListener("click", () => dl("airalert_metrics.csv", csvRows));
+</script>
+</body>
+</html>

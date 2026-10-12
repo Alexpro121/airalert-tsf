@@ -1,0 +1,28 @@
+[project]
+name = "airalert-tsf"
+version = "0.1.0"
+description = "AirAlert-TSF: imbalanced time-series binary classification of air-raid risk"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "pandas>=2.2.0",
+  "numpy>=1.26.0",
+  "lightgbm>=4.3.0",
+  "scikit-learn>=1.5.0",
+  "shap>=0.45.0",
+  "pydantic>=2.7.0",
+  "loguru>=0.7.2",
+  "matplotlib>=3.8.0",
+  "seaborn>=0.13.0",
+  "joblib>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4.0"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["real: needs verified real data (skipped otherwise)"]

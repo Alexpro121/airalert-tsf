@@ -1,0 +1,145 @@
+# CHANGELOG (vs report AirAlert-TSF_code_review)
+
+- CRITICAL-1: PARTLY-FIXED — grid_builder.py/pyproject/requirements/README існували; додано .meta.json джерела; airforce_messages.csv лишається опціональним (--text-signals + warning).
+- CRITICAL-2: FIXED — єдина фабрика train_model/detect_backend для OOF і фіналу; широкого try/except більше немає.
+- CRITICAL-3: FIXED — обрано Варіант Б, задокументовано в README + тест test_forecast_moment_variant_b.
+- CRITICAL-4: FIXED — додано PersistenceBaseline, ClimatologyBaseline, AlwaysAlert; onset/cont для всіх моделей.
+- CRITICAL-5: FIXED — prevalence train/test у логах і metrics.json; рядок always; Precision/Recall окремо.
+- CRITICAL-6: FIXED — синтетика лише --synthetic в alerts_synthetic.csv; без прапорців і файлу — явна помилка; data_source в metrics.json; SYNTH_END — параметр end.
+- CRITICAL-7: FIXED — календар по Europe/Kyiv; наївні часи = Kyiv; DST-тести.
+- CRITICAL-8: FIXED — scale_pos_weight прибрано; Brier Skill Score; калібрація для всіх моделей; заяви про каліброваність прибрано.
+- CRITICAL-9: FIXED — subsample_freq=1 у resolved_lgbm_params.
+- HIGH-1: FIXED — clip(upper=168) для всіх + has_history (1/0) замість неоднозначних 168.
+- HIGH-2: FIXED — try лише навколо plots/SHAP/dump; logger.exception.
+- HIGH-3: FIXED — guardrail data-relative max(0.25, 1.2*prevalence); нічиї → вищий поріг; fallback max-precision з тією ж логікою; описано в README.
+- HIGH-4: PARTLY-FIXED — блоковий bootstrap CI для PR-AUC; rolling-origin і фіксація порогу до перегляду тесту — OPEN.
+- HIGH-5: FIXED — regex з межами слів; tz-assert; покриття train/test у логах; rename has_threat_mention; абляцію не проведено (немає файлу повідомлень) — OPEN.
+- HIGH-6: FIXED — ADJACENCY + validator прибирає target; non-Kyiv синтетика позначена як умовна.
+- HIGH-7: FIXED — ValueError при нульових подіях цільового регіону; warning при < min_events.
+- HIGH-8: PARTLY-FIXED — .meta.json з source/датою; tail_cutoff_hours=6; token видалено; pin commit-hash і NaN-маскування непокритих регіонів — OPEN.
+- HIGH-9: FIXED — assert 1h-регулярності в make_features.
+- HIGH-10: NOT APPLICABLE (рішення) — country_ratio лишено як середнє сусідів з документованою формулою; розширення сусідів — OPEN.
+- HIGH-11: FIXED — oof_predict/train_model винесено; source-тести замінено поведінковими; real-gate по meta source; sleep прибрано; conftest.py з pythonpath.
+- MEDIUM-1: FIXED — стратифікований семпл + shap_waterfall.png топ-епізоду; формулювання виправлено.
+- MEDIUM-2: FIXED — scoring=average_precision, n=2000, repeats=3.
+- MEDIUM-3: FIXED — PR-криві всіх моделей + prevalence-лінія; calibration для всіх.
+- MEDIUM-4: FIXED — reports/metrics.json (data_source, prevalence, версії) + model.pkl.
+- MEDIUM-5: FIXED — єдина схема n_splits=5 з gap=H усюди; class_weight лишено лише у HGB-fallback з документованою причиною.
+- MEDIUM-6: SKIPPED — немає бюджету на Optuna; зафіксовано як OPEN.
+- MEDIUM-7: див. DOC-2.
+- MEDIUM-8: FIXED — шляхи через ROOT, sys.path; реальний EDA (автокореляція, крос-кореляція, тривалості); виконати локально не вдалося (немає jupyter/nbformat у середовищі) — outputs порожні.
+- LOW-1: FIXED — freq використовується; seed з Settings; airforce-шлях у Settings; prev-guard при відсутності lag_1.
+- LOW-2: FIXED — resolve_paths/oof_predict/train_model/load_dataset/build_text_features.
+- LOW-3: FIXED — logger.exception; prevalence/coverage у логах.
+- LOW-4: FIXED — requires-python >=3.11 покриває синтаксис; pydantic v2 зафіксовано залежністю.
+- LOW-5: FIXED — у звіті фактичні частки з логів.
+# CHANGELOG v2 (vs AirAlert-TSF_review_v2)
+- HIGH-1: SKIPPED absence claim (file exists); ADDED edge tests (exact-hour start/end, >24h).
+- HIGH-2: FIXED variant (a): target A[t..t+2], no dead hour; docstrings/README/test updated; justification: true 3h horizon.
+- HIGH-3/HIGH-5: FIXED one convention (offset honored, naive=Kyiv) shared by alerts and messages; same-wall-clock test.
+- HIGH-4: FIXED ambiguous DST resolves to first occurrence (ambiguous=True) with drop logging; test requires len==1 and exact UTC.
+- HIGH-6: FIXED left-boundary stem matching (inflections match); FP sample test; fixed wrong stem.
+- HIGH-7: FIXED BSS reference is train prevalence.
+- HIGH-8: FIXED paired block-bootstrap delta CI in metrics.json.
+- HIGH-9: FIXED sha256 in meta, hash-checked read_source, wrong-hash test; urllib download with timeout.
+- MEDIUM-1/LOW-8: FIXED misleading names; is_night==1 assertion added.
+- MEDIUM-2: FIXED boolean-mask NaT filter in load_events.
+- MEDIUM-3: FIXED outside-grid count logged.
+- MEDIUM-4: OPEN (wording); has_threat_mention documents dictionary limits.
+- MEDIUM-5: FIXED use_text_signals in metrics.json + README section.
+- MEDIUM-6: FIXED OOF-vs-holdout mean-pred shift logged.
+- MEDIUM-7: FIXED natural-distribution SHAP summary + balanced plot with suffix.
+- MEDIUM-8: FIXED permutation on seeded random sample.
+- MEDIUM-9: PARTLY-FIXED fetch date + not-pinned note recorded; commit pin OPEN.
+- MEDIUM-10: FIXED download via urllib with timeout.
+- MEDIUM-11: FIXED empty-rows ValueError.
+- MEDIUM-12: FIXED unknown region raises ValueError with valid list.
+- MEDIUM-13/LOW-4: FIXED paths/tempfile/imports/tz; execution impossible here (no jupyter) - OPEN outputs.
+- MEDIUM-14: FIXED exact expectations (len==1+UTC, FP set, empty guard).
+- MEDIUM-15/LOW-8: FIXED e2e test on tmp paths parametrized over lightgbm+hgb.
+- LOW-1/LOW-2/LOW-6: FIXED threshold defaults from Settings; curves computed once.
+- LOW-3: SKIPPED (no synthetic SHAP claims in current docs).
+- LOW-4: FIXED (done in v1).
+- LOW-5: FIXED freq validator (only 1h).
+- LOW-7: FIXED duplicate removed (exact gap check kept).
+# CHANGELOG v3 (re-verification pass)
+- HIGH-1: SKIPPED (file exists); edge tests present since v1.
+- HIGH-2/HIGH-3/HIGH-5/MEDIUM-2: VERIFIED already fixed (boolean mask, shared parse_wall_times).
+- HIGH-4/LOW-1/LOW-2/LOW-3/MEDIUM-2(timeout): VERIFIED already fixed.
+- MEDIUM-1: EXTENDED FP set (syndrome, collider cases); fixed stem already.
+- MEDIUM-4: VERIFIED 3.5s on 720-row test - acceptable, no change.
+- MEDIUM-5: FIXED warning log on guardrail fallback + README documents the rule.
+- GRID-BUILDER PERF: vectorized via searchsorted+diff-cumsum (21.5s -> 0.08s, 269x on 115787 rows); output identical; tz-aware assert; zero-event warning; edge tests (exact/cross-boundary).
+# CHANGELOG v4
+- HIGH-1: FIXED OSError+smoke-fit in detect_backend; test simulates OSError on import.
+- HIGH-2: FIXED class_weight removed from HGB (single rule); sklearn>=1.5 floor kept.
+- HIGH-3: FIXED guardrail cap 0.95, fallback counter logged, tune_threshold returns (thr, used_fallback); always-F2 stated directly.
+- HIGH-4: FIXED LagHourBaseline (lag_1+calendar) with OOF/threshold/delta vs it.
+- HIGH-5: FIXED paired delta CI for onset/cont; onset is headline metric.
+- HIGH-6: FIXED both stems kept + ballistika tests.
+- HIGH-7: FIXED all-clear exclusion from threat + test.
+- MEDIUM-1: FIXED isolated SHAP branches, fallback to importance_fallback.png.
+- MEDIUM-2: FIXED validate-before-write + sha snapshot.
+- MEDIUM-3: FIXED fold-aware end fix + end>start check in load_raw with logging.
+- MEDIUM-4: FIXED effective use_text_signals + text_active_hours; text cols omitted when no source.
+- MEDIUM-5: FIXED TRANSIT_REGIONS rename + nbr lag2 features.
+- MEDIUM-6: SKIPPED (15-min grid out of scope; recorded as open limitation).
+- MEDIUM-7: FIXED strict JSON, meta fields, model bundle + lgbm.txt.
+- MEDIUM-8: FIXED e2e value assertions (delta, BSS, threshold, rule, waterfall).
+- MEDIUM-9: FIXED target/embargo in notebooks; execution impossible here (no jupyter).
+- MEDIUM-10: VERIFIED versions pinned in pyproject; no CI setup in repo - OPEN.
+- MEDIUM-11: FIXED format=mixed, NaT counts, extended region map + warnings.
+- MEDIUM-12: FIXED unified bootstrap with point estimate, n_boot=1000, full blocks only.
+- MEDIUM-13: PARTLY (per-fold thresholds logged); rolling-origin OPEN.
+- LOW-1..11, TEST-1..5: FIXED as specified (details in code/tests).
+- Reserve-note #1 (shift(0) leakage): REJECTED - X(<t) and y(>=t) are disjoint by construction, proven by tests.
+- Reserve-note #2 (DST NaT): REJECTED as change - deterministic first-occurrence kept per task spec.
+- Reserve-note #3 (embargo gap): REJECTED - gap is the mechanism, documented.
+- Reserve-notes #4/#5/#7/#8/#9: SKIPPED/OPEN with reasons in code review file.
+# CHANGELOG v5 (critical audit v4)
+- HIGH-1: FIXED OSError+smoke-fit; OSError-import test.
+- HIGH-2: FIXED class_weight removed from HGB.
+- HIGH-3: FIXED 0.95 cap, fallback counter, (thr, used_fallback); always-F2 stated.
+- HIGH-4: FIXED LagHourBaseline + delta vs it (+0.045 [-0.007, +0.099] on 2026-10-12 rerun, NOT proven; was +0.046 significant on 2026-10-11 window — bootstrap noise).
+- HIGH-9: FIXED degenerate operating point (100% alarms) -> strict guard + fallback 0.5 with degenerate_fallback flag; metrics/rolling re-run on one snapshot (2d66ddd1); README/RESULTS/TECHNICAL_DESCRIPTION re-synced.
+- MODEL-v2: +nbr_*_sum3, +roll_sum_3h (32 features), LGBM 500/lr0.02/min_child40: PR-AUC 0.629->0.639. REJECTED: month_sin/cos (OOF 0.41->0.35), onset sample weights (0.42->0.37), recent-60d threshold (still degenerate).
+- HIGH-5: FIXED onset/cont paired delta CI; onset superiority NOT proven (CI has 0).
+- HIGH-6/7: FIXED both stems + all-clear exclusion + tests.
+- MEDIUM-1: FIXED isolated SHAP branches + importance_fallback.png.
+- MEDIUM-2: FIXED validate-before-write + snapshots with rotation(5).
+- MEDIUM-3: FIXED fold-aware end fix + logging.
+- MEDIUM-4: FIXED effective text flag + hours; text cols omitted when no source.
+- MEDIUM-5: FIXED TRANSIT_REGIONS rename + nbr lag2.
+- MEDIUM-6: SKIPPED (15-min grid out of scope).
+- MEDIUM-7: FIXED strict JSON, meta fields, versioned bundle + lgbm.txt.
+- MEDIUM-8/15: FIXED e2e value assertions + conditional waterfall.
+- MEDIUM-9: FIXED target/embargo in notebooks; no jupyter in env - outputs empty.
+- MEDIUM-10: VERIFIED floors in pyproject; no CI in repo - OPEN.
+- MEDIUM-11: FIXED format=mixed, NaT counts, region variants + warnings.
+- MEDIUM-12: FIXED unified bootstrap, point estimate, n_boot=1000, full blocks.
+- MEDIUM-13: PARTLY (per-fold thresholds); rolling-origin OPEN.
+- LOW/TEST: FIXED (regex time, validate_default, exclusive flags, KYIV_TZ single source, homoglpyhs, pickle warning, disclaimer, real embargo tests, FP mids, e2e backend param).
+- Reserve #1/#2/#3: REJECTED with reasons (disjoint X/y; deterministic fold rule per spec; gap is the mechanism).
+# CHANGELOG v6 (audit 15 items)
+- #1 SKIPPED (grid_builder.py exists; verified).
+- #2 FIXED test_visualize uses repo root from __file__.
+- #3 FIXED snapshot glob requires date digits (alerts_synthetic.csv safe).
+- #4 FIXED LagHourBaseline returns (N,2); proba_1d crutch removed.
+- #5 FIXED normalize_region inside load_raw.
+- #6 FIXED HGB skips SHAP attempt, straight to permutation (no warning spam).
+- #7 FIXED bootstrap truncated to n.
+- #8 FIXED mask applied inside bootstrap iterations.
+- #9 FIXED confusables also checked in exclude filter.
+- #10 FIXED meta-hash assertion.
+- #11-15 FIXED (always in curves, operating point, minor items as specified).
+# CHANGELOG v7 (full audit v5: A/B/C/D/E/F/G)
+# CHANGELOG v8 (follow-up verification round)
+# CHANGELOG v9 (spec-driven round: A/B/C/D/E/F/G)
+# CHANGELOG v10 (verification round: fresh-window threshold, new features, onset significance)
+# CHANGELOG v11 (v6 audit round)
+# CHANGELOG v12 (����� ��������: A/B 4 vs 8 ��������)
+- EXTENDED: Kyiv neighbours 4 -> 8 (+Zhytomyr/Cherkasy/Kharkiv/Vinnytsia); region map covers new dump names.
+- MEASURED: paired delta ext8-base4 = -0.006 CI [-0.032, +0.019] (not significant); new corridors gain share 8.5%, no metric gain. Default kept at 8 (no harm, wider coverage).
+# CHANGELOG v13 (������ ������ �������)
+- PATHS: 6 �������� (east/northeast/southeast/south/west/southwest); dist+count �� ����� + min_threat_dist (13 ���).
+- MEASURED: OOF +0.003, holdout +0.015, gain 6.7%. ������.

@@ -1,0 +1,39 @@
+================================================================================
+AIRALERT-TSF: FINAL STRESS-TEST REPORT (test12.txt)
+date: 2026-10-10 | Senior QA & ML Audit Engineer | scope: airalert-tsf-fixed
+================================================================================
+1. PYTEST: 52 passed, 0 failed, 2 skipped (real-data hash gate).
+   files:
+   - tests/test_adversarial_audit.py::
+   - tests/test_data_leakage.py::
+   - tests/test_e2e.py::
+   - tests/test_grid_builder.py::
+   - tests/test_kyiv_time.py::
+   - tests/test_provenance.py::
+   - tests/test_real_data.py::
+   - tests/test_text_signals.py::
+   zones verified: Kyiv tz + DST, forecast moment variant (a) Y=max(A[t..t+2]),
+   provenance sha256/meta, NLP inflections + FP rejects, guardrail/onset/HGB guards,
+   e2e lightgbm + hgb backends.
+2. KYIV pipeline (real data):
+   heuristic: pr_auc=0.5773 brier=0.4417 prec=0.578 rec=0.862 f2=0 .7850
+   persistence: pr_auc=0.5924 brier=0.5014 prec=0.632 rec=0.307 f2 =0.3419
+   always: pr_auc=0.5750 brier=0.4250 prec=0.575 rec=1.000 f2=0.87 12
+   climatology: pr_auc=0.5320 brier=0.3768 prec=0.575 rec=1.000 f2 =0.8712
+   dummy_logistic: pr_auc=0.5375 brier=0.3755 prec=0.575 rec=1.000  f2=0.8712
+   main: pr_auc=0.6429 brier=0.3065 prec=0.585 rec=0.949 f2=0.8441 3. SUMY pipeline (real data):
+   heuristic: pr_auc=0.7574 brier=0.3681 prec=0.762 rec=0.735 f2=0 .7403
+   persistence: pr_auc=0.7909 brier=0.4389 prec=0.835 rec=0.511 f2 =0.5542
+   always: pr_auc=0.7444 brier=0.2556 prec=0.744 rec=1.000 f2=0.93 58
+   climatology: pr_auc=0.7948 brier=0.2127 prec=0.775 rec=0.868 f2 =0.8473
+   dummy_logistic: pr_auc=0.8016 brier=0.2131 prec=0.752 rec=0.914  f2=0.8763
+   main: pr_auc=0.7898 brier=0.1838 prec=0.786 rec=0.924 f2=0.8922 nbr_Sumy excluded from features: enforced in make_features (c != target),
+   covered by behavioral test_02.
+4. ARTIFACTS (reports/): metrics.json, pr_curve.png, calibration.png,
+   shap_summary.png, shap_summary_balanced.png, shap_waterfall.png, model.pkl -
+   all written by the runs above and validated (PNG readable, model loads).
+5. EDGE CASES (tests, all green): exact-hour start/end, cross-boundary,
+   >24h alerts, naive-tz rejection, DST first-occurrence + exact UTC,
+   mixed offset/naive, same wall-clock alert+message, stem inflections,
+   mid-word FP rejects, empty-intersection guard, wrong-hash meta.
+================================================================================

@@ -258,3 +258,24 @@ def test_hours_since_last_clipped_after_long_calm():
     X, _ = make_features(grid, "Kyiv", ["Sumy"], horizon=3)
     assert X["hours_since_last"].max() == 168.0
     assert (X["has_history"] == 1).all()
+
+
+def test_threat_path_distance_nearest_wins_on_overlap():
+    idx = pd.date_range("2024-01-01", periods=60, freq="1h", tz="UTC")
+    surs_z = [0] * 60
+    surs_su = [0] * 60
+    surs_ch = [0] * 60
+    surs_ko = [0] * 60
+    for surs_i in (27, 28, 29):
+        surs_su[surs_i] = 1
+    for surs_i in (28, 29):
+        surs_ch[surs_i] = 1
+    surs_ko[29] = 1
+    surs_grid = pd.DataFrame({"Kyiv": surs_z, "Sumy": surs_su, "Chernihiv": surs_ch,
+                              "Kyiv_Oblast": surs_ko, "Poltava": surs_z}, index=idx)
+    surs_X, _ = make_features(surs_grid, "Kyiv",
+                              ["Sumy", "Chernihiv", "Kyiv_Oblast", "Poltava"],
+                              horizon=3, lags=[1, 2], windows=[6])
+    assert surs_X.loc[idx[30], "path_northeast_dist"] == 1
+    assert surs_X.loc[idx[30], "path_northeast_count"] == 3
+    assert surs_X.loc[idx[30], "min_threat_dist"] == 1

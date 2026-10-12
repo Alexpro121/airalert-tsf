@@ -96,9 +96,10 @@ def make_features(
         if not present:
             continue
         sub = df[present].shift(1)
-        # distance from Kyiv: nearest upstream node = 1
+        # distance from Kyiv: nearest upstream node = 1.
+        # present goes far -> near, so assign far first: nearest wins.
         dist = pd.Series(len(present) + 1, index=df.index)
-        for pos, n in enumerate(reversed(present), start=1):
+        for pos, n in zip(range(len(present), 0, -1), present):
             dist = dist.where(sub[n] != 1, pos)
         dist = dist.where(sub.notna().all(axis=1), np.nan)
         feats[f"path_{pname}_dist"] = dist.astype(float)

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AirAlert-TSF — прогноз тривог</title>
+<style>
+  :root { --fon: #0e1219; --karta: #171d29; --linia: #2a3348; --tekst: #eef1f6; --siry: #9aa3b5; --akcent: #e94560; --zelen: #4ade80; --zhovt: #facc15; --cherv: #f87171; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 18px; background: var(--fon); color: var(--tekst); }
+  h1 { font-size: 1.5em; background: linear-gradient(90deg, #e94560, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 4px 0 2px; }
+  .pidzag { color: var(--siry); font-size: 0.9em; margin-bottom: 6px; }
+  .karta { background: var(--karta); border: 1px solid var(--linia); border-radius: 14px; padding: 16px; margin: 12px 0; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
+  .karta h2 { font-size: 1.05em; margin: 0 0 10px; color: var(--siry); text-transform: uppercase; letter-spacing: 0.06em; }
+  .riadok { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input, select, button { font-size: 1em; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--linia); background: #0c1017; color: var(--tekst); }
+  button { background: var(--akcent); border: none; cursor: pointer; font-weight: bold; transition: transform 0.08s, opacity 0.15s; }
+  button:hover:not(:disabled) { opacity: 0.88; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: wait; }
+  button.vtor { background: #2b3348; }
+  #surs_pomylka { background: #7f1d1d; padding: 10px 12px; border-radius: 10px; display: none; margin-top: 10px; }
+  #surs_status { font-size: 0.85em; color: var(--siry); }
+  .surs_rez_sitka { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+  #surs_velyke { font-size: 2.2em; font-weight: 800; }
+  .zelen { color: var(--zelen); } .zhovt { color: var(--zhovt); } .cherv { color: var(--cherv); }
+  .beidzh { display: inline-block; padding: 7px 14px; border-radius: 20px; font-weight: bold; margin-top: 6px; }
+  .beidzh.tryvoga { background: #7f1d1d; } .beidzh.tyho { background: #14532d; }
+  table.ctx { border-collapse: collapse; margin-top: 6px; font-size: 0.95em; }
+  table.ctx td { padding: 4px 12px 4px 0; }
+  table.ctx td:first-child { color: var(--siry); }
+  .surs_kroky { display: flex; gap: 8px; flex-wrap: wrap; }
+  .surs_krok { flex: 1 1 160px; background: #0c1017; border: 1px solid var(--linia); border-radius: 10px; padding: 10px; font-size: 0.88em; }
+  .surs_krok b { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .surs_nomer { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--akcent); align-items: center; justify-content: center; font-size: 0.8em; }
+  .surs_krok span { color: var(--siry); }
+  .surs_drayver { display: grid; grid-template-columns: 200px 1fr 70px; gap: 8px; align-items: center; margin: 5px 0; font-size: 0.9em; }
+  .surs_smuga { background: #0c1017; border-radius: 6px; height: 14px; position: relative; overflow: hidden; }
+  .surs_zap { height: 100%; border-radius: 6px; }
+  .surs_zap.vgoru { background: var(--cherv); } .surs_zap.vnyz { background: var(--zelen); }
+  .surs_drayver small { color: var(--siry); display: block; }
+  canvas { width: 100%; height: 230px; background: #0c1017; border-radius: 10px; border: 1px solid var(--linia); }
+  .legend { font-size: 0.85em; color: var(--siry); margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>AirAlert-TSF — чи буде тривога?</h1>
+<div class="pidzag">ймовірність тривоги на 3 години вперед · Київ · LightGBM</div>
+<div id="surs_status" class="karta">завантаження...</div>
+
+<div class="karta">
+  <h2>Запит</h2>
+  <div class="riadok">
+    <label>Година (київський час): <input type="datetime-local" id="surs_data" step="3600"></label>
+    <button id="surs_knopka">Прогноз</button>
+    <button class="vtor" id="surs_zaraz">Останні дані</button>
+    <button class="vtor" id="surs_minus1">−1 год</button>
+    <button class="vtor" id="surs_plus1">+1 год</button>
+    <button class="vtor" id="surs_sync">Синхронізувати дані</button>
+    <span id="surs_sync_stan" style="font-size:0.85em;color:#9aa3b5"></span>
+  </div>
+  <div id="surs_pomylka"></div>
+</div>
+
+<div class="karta" id="surs_rez" style="display:none">
+  <h2>Результат</h2>
+  <div class="surs_rez_sitka">
+    <svg id="surs_gauge" width="210" height="130" viewBox="0 0 210 130"></svg>
+    <div>
+      <div><span id="surs_velyke">–</span> <span id="surs_beidzh" class="beidzh"></span></div>
+      <div id="surs_detali" style="margin-top:6px;color:#9aa3b5;font-size:0.9em"></div>
+      <table class="ctx" id="surs_ctx"></table>
+    </div>
+  </div>
+</div>
+
+<div class="karta" id="surs_yak_karta" style="display:none">
+  <h2>Як пораховано</h2>
+  <div class="surs_kroky" id="surs_steps"></div>
+</div>
+
+<div class="karta" id="surs_chomu_karta" style="display:none">
+  <h2>Чому такий ризик</h2>
+  <div id="surs_baza" style="font-size:0.9em;color:#9aa3b5;margin-bottom:6px"></div>
+  <div id="surs_driver_list"></div>
+</div>
+
+<div class="karta">
+  <h2>Ризик за останні дні</h2>
+  <div class="riadok" style="margin-bottom:8px">
+    <select id="surs_dni">
+      <option value="1">1 день</option>
+      <option value="3" selected>3 дні</option>
+      <option value="7">7 днів</option>
+      <option value="14">14 днів</option>
+    </select>
+    <button class="vtor" id="surs_grafik_kn">Показати</button>
+  </div>
+  <canvas id="surs_grafik" width="860" height="230"></canvas>
+  <div class="legend">червоний фон — була тривога; лінія — ризик моделі; пунктир — поріг</div>
+</div>
+
+<script>
+var surs_status = null;
+var surs_shliahy = {'east': 'східний', 'northeast': 'північно-східний', 'southeast': 'південно-східний', 'south': 'південний', 'west': 'західний', 'southwest': 'південно-західний'};
+
+function surs_kyiv_str(surs_iso) {
+  var surs_f = new Intl.DateTimeFormat('sv', {timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
+  return surs_f.format(new Date(surs_iso)).replace(' ', 'T');
+}
+
+function surs_zachip(surs_el) {
+  if (surs_el.min && surs_el.value && surs_el.value < surs_el.min) surs_el.value = surs_el.min;
+  if (surs_el.max && surs_el.value && surs_el.value > surs_el.max) surs_el.value = surs_el.max;
+}
+
+function surs_sunuty(surs_god) {
+  var surs_el = document.getElementById('surs_data');
+  if (!surs_el.value) return;
+  var surs_d = new Date(surs_el.value);
+  surs_d.setHours(surs_d.getHours() + surs_god);
+  var surs_p = function(n) { return (n < 10 ? '0' : '') + n; };
+  surs_el.value = surs_d.getFullYear() + '-' + surs_p(surs_d.getMonth()+1) + '-' + surs_p(surs_d.getDate()) + 'T' + surs_p(surs_d.getHours()) + ':00';
+  surs_zachip(surs_el);
+}
+
+function surs_pokaz_pomylku(surs_tekst) {
+  var surs_e = document.getElementById('surs_pomylka');
+  surs_e.style.display = surs_tekst ? 'block' : 'none';
+  surs_e.textContent = surs_tekst || '';
+}
+
+function surs_nazva(surs_c) {
+  var surs_m = {'trail_168h': 'частота за тиждень', 'trail_720h': 'частота за місяць',
+    'hours_since_last': 'годин спокою', 'has_history': 'чи були тривоги',
+    'nbr_new_onset': 'нова тривога у сусідів', 'country_ratio': 'частка тривожних сусідів',
+    'min_threat_dist': 'найближча загроза',
+    'hour_sin': 'час доби (sin)', 'hour_cos': 'час доби (cos)',
+    'dow_sin': 'день тижня (sin)', 'dow_cos': 'день тижня (cos)', 'is_night': 'ніч'};
+  if (surs_m[surs_c]) return surs_m[surs_c];
+  var surs_m2 = surs_c.match(/^lag_(\d+)$/);
+  if (surs_m2) return 'тривога ' + surs_m2[1] + ' год тому';
+  surs_m2 = surs_c.match(/^roll_sum_(\d+)h$/);
+  if (surs_m2) return 'годин тривоги за ' + surs_m2[1] + ' год';
+  surs_m2 = surs_c.match(/^nbr_(.+)_lag2$/);
+  if (surs_m2) return 'сусід ' + surs_m2[1] + ' (2 год тому)';
+  surs_m2 = surs_c.match(/^nbr_(.+)_sum3$/);
+  if (surs_m2) return 'сусід ' + surs_m2[1] + ' (сума за 3 год)';
+  surs_m2 = surs_c.match(/^nbr_(.+)$/);
+  if (surs_m2) return 'сусід ' + surs_m2[1] + ' (год тому)';
+  surs_m2 = surs_c.match(/^path_(.+)_dist$/);
+  if (surs_m2) return 'шлях ' + (surs_shliahy[surs_m2[1]] || surs_m2[1]) + ': відстань';
+  surs_m2 = surs_c.match(/^path_(.+)_count$/);
+  if (surs_m2) return 'шлях ' + (surs_shliahy[surs_m2[1]] || surs_m2[1]) + ': вузлів у тривозі';
+  return surs_c;
+}
+
+function surs_shkala(surs_ryzyk, surs_porig) {
+  var surs_ns = 'http://www.w3.org/2000/svg';
+  var surs_g = document.getElementById('surs_gauge');
+  while (surs_g.firstChild) surs_g.removeChild(surs_g.firstChild);
+  var surs_cx = 105, surs_cy = 110, surs_r = 85;
+  var surs_t = function(a) { return [surs_cx + surs_r * Math.cos(a), surs_cy - surs_r * Math.sin(a)]; };
+  var surs_duga = function(a0, a1) {
+    var surs_p0 = surs_t(a0), surs_p1 = surs_t(a1);
+    return 'M ' + surs_p0[0] + ' ' + surs_p0[1] + ' A ' + surs_r + ' ' + surs_r + ' 0 0 1 ' + surs_p1[0] + ' ' + surs_p1[1];
+  };
+  var surs_p = Math.PI;
+  var surs_zony = [[0, 0.33, '#4ade80'], [0.33, 0.66, '#facc15'], [0.66, 1, '#f87171']];
+  for (var i = 0; i < surs_zony.length; i++) {
+    var surs_el = document.createElementNS(surs_ns, 'path');
+    surs_el.setAttribute('d', surs_duga(surs_p - surs_zony[i][0] * surs_p, surs_p - surs_zony[i][1] * surs_p));
+    surs_el.setAttribute('stroke', surs_zony[i][2]);
+    surs_el.setAttribute('stroke-width', '14');
+    surs_el.setAttribute('fill', 'none');
+    surs_el.setAttribute('opacity', '0.85');
+    surs_g.appendChild(surs_el);
+  }
+  var surs_kt = surs_t(surs_p - surs_porig * surs_p);
+  var surs_tick = document.createElementNS(surs_ns, 'line');
+  surs_tick.setAttribute('x1', surs_kt[0]); surs_tick.setAttribute('y1', surs_kt[1] - 8);
+  surs_tick.setAttribute('x2', surs_kt[0]); surs_tick.setAttribute('y2', surs_kt[1] + 16);
+  surs_tick.setAttribute('stroke', '#e8e8e8'); surs_tick.setAttribute('stroke-width', '3');
+  surs_g.appendChild(surs_tick);
+  var surs_ka = surs_p - Math.max(0, Math.min(1, surs_ryzyk)) * surs_p;
+  var surs_kp = surs_t(surs_ka);
+  var surs_strilka = document.createElementNS(surs_ns, 'line');
+  surs_strilka.setAttribute('x1', surs_cx); surs_strilka.setAttribute('y1', surs_cy);
+  surs_strilka.setAttribute('x2', surs_kp[0]); surs_strilka.setAttribute('y2', surs_kp[1]);
+  surs_strilka.setAttribute('stroke', '#fff'); surs_strilka.setAttribute('stroke-width', '4');
+  surs_strilka.setAttribute('stroke-linecap', 'round');
+  surs_g.appendChild(surs_strilka);
+  var surs_tekst = document.createElementNS(surs_ns, 'text');
+  surs_tekst.setAttribute('x', surs_cx); surs_tekst.setAttribute('y', surs_cy - 8);
+  surs_tekst.setAttribute('text-anchor', 'middle'); surs_tekst.setAttribute('fill', '#9aa3b5');
+  surs_tekst.setAttribute('font-size', '11');
+  surs_tekst.textContent = 'поріг ' + surs_porig;
+  surs_g.appendChild(surs_tekst);
+}
+
+function surs_kroky(surs_j) {
+  var surs_pl = surs_j.pipeline;
+  var surs_dani = [
+    ['Сітка', surs_pl.grid_hours + ' год · за 24 год тривог: ' + surs_pl.alerts_24h],
+    ['Ознаки', surs_pl.features + ' шт: лаги · вікна · сусіди · шляхи · календар'],
+    ['Модель', surs_pl.model + ' → ризик ' + surs_j.risk_pct + ' % за ' + surs_pl.ms + ' мс'],
+    ['Поріг', String(surs_j.threshold) + ' → ' + (surs_j.alarm ? 'тривога' : 'спокійно')]
+  ];
+  var surs_s = '';
+  for (var i = 0; i < surs_dani.length; i++) {
+    surs_s += '<div class="surs_krok"><b><span class="surs_nomer">' + (i + 1) + '</span>' + surs_dani[i][0] + '</b><span>' + surs_dani[i][1] + '</span></div>';
+  }
+  document.getElementById('surs_steps').innerHTML = surs_s;
+  document.getElementById('surs_yak_karta').style.display = 'block';
+}
+
+function surs_zapyt() {
+  surs_pokaz_pomylku('');
+  var surs_pole = document.getElementById('surs_data');
+  var surs_v = surs_pole.value;
+  if (!surs_v) {
+    if (surs_status) { surs_pole.value = surs_kyiv_str(surs_status.data_to); surs_v = surs_pole.value; }
+    else { surs_pokaz_pomylku('обери годину'); return; }
+  }
+  fetch('/api/predict?ts=' + encodeURIComponent(surs_v)).then(function(r) {
+    return r.json().then(function(surs_j) { return {kod: r.status, tilo: surs_j}; });
+  }).then(function(surs_p) {
+    if (surs_p.kod !== 200) { surs_pokaz_pomylku(surs_p.tilo.error || 'помилка'); return; }
+    var surs_j = surs_p.tilo;
+    document.getElementById('surs_rez').style.display = 'block';
+    surs_shkala(surs_j.risk, surs_j.threshold);
+    var surs_vv = document.getElementById('surs_velyke');
+    surs_vv.textContent = surs_j.risk_pct + ' %';
+    surs_vv.className = surs_j.risk < 0.33 ? 'zelen' : (surs_j.risk < 0.66 ? 'zhovt' : 'cherv');
+    var surs_b = document.getElementById('surs_beidzh');
+    if (surs_j.alarm) { surs_b.textContent = 'ЙМОВІРНА ТРИВОГА'; surs_b.className = 'beidzh tryvoga'; }
+    else { surs_b.textContent = 'спокійно'; surs_b.className = 'beidzh tyho'; }
+    document.getElementById('surs_detali').textContent =
+      surs_j.region + ', ' + surs_j.timestamp_kyiv.slice(0, 16).replace('T', ' ') +
+      ' → ризик що тривога буде хоч в одну з ' + surs_j.horizon_h + ' годин. Поріг: ' + surs_j.threshold;
+    var surs_c = surs_j.context;
+    var surs_sus = surs_c.active_neighbors.length ? surs_c.active_neighbors.join(', ') : 'нема';
+    document.getElementById('surs_ctx').innerHTML =
+      '<tr><td>годину тому тривога:</td><td><b>' + (surs_c.lag_1 ? 'так' : 'ні') + '</b></td></tr>' +
+      '<tr><td>ніч / година Києва:</td><td>' + (surs_c.is_night ? 'ніч' : 'день') + ' (' + surs_c.kyiv_hour + ':00)</td></tr>' +
+      '<tr><td>тривога у сусідів:</td><td>' + surs_sus + '</td></tr>' +
+      '<tr><td>годин спокою:</td><td>' + surs_c.hours_since_last + '</td></tr>';
+    surs_kroky(surs_j);
+    surs_chomu(surs_v);
+  }).catch(function() { surs_pokaz_pomylku('сервер не відповів'); });
+}
+
+function surs_chomu(surs_v) {
+  fetch('/api/explain?ts=' + encodeURIComponent(surs_v)).then(function(r) { return r.json(); }).then(function(surs_j) {
+    if (surs_j.error) return;
+    document.getElementById('surs_chomu_karta').style.display = 'block';
+    document.getElementById('surs_baza').textContent =
+      'типовий місяць дав би ' + (surs_j.base * 100).toFixed(1) + ' %, а вийшло ' + (surs_j.risk * 100).toFixed(1) + ' %. Фактори:';
+    var surs_maks = 0.0001, i;
+    for (i = 0; i < surs_j.drivers.length; i++) {
+      if (Math.abs(surs_j.drivers[i].delta) > surs_maks) surs_maks = Math.abs(surs_j.drivers[i].delta);
+    }
+    var surs_s = '';
+    for (i = 0; i < surs_j.drivers.length; i++) {
+      var surs_d = surs_j.drivers[i];
+      var surs_sh = Math.round(Math.abs(surs_d.delta) / surs_maks * 100);
+      var surs_kl = surs_d.delta >= 0 ? 'vgoru' : 'vnyz';
+      var surs_znak = surs_d.delta >= 0 ? '+' : '';
+      var surs_zn = surs_d.value === null ? '—' : surs_d.value;
+      surs_s += '<div class="surs_drayver"><div>' + surs_nazva(surs_d.name) + '<small>зараз ' + surs_zn + ', типово ' + (surs_d.median + 0) + '</small></div>' +
+        '<div class="surs_smuga"><div class="surs_zap ' + surs_kl + '" style="width:' + surs_sh + '%"></div></div>' +
+        '<div>' + surs_znak + (surs_d.delta * 100).toFixed(1) + ' пп</div></div>';
+    }
+    document.getElementById('surs_driver_list').innerHTML = surs_s;
+  });
+}
+
+function surs_maliunok(surs_dani) {
+  var surs_cv = document.getElementById('surs_grafik');
+  var surs_x = surs_cv.getContext('2d');
+  var surs_W = surs_cv.width, surs_H = surs_cv.height;
+  surs_x.clearRect(0, 0, surs_W, surs_H);
+  var surs_n = surs_dani.t.length;
+  if (!surs_n) return;
+  var surs_krok = surs_W / surs_n;
+  var surs_y = function(v) { return surs_H - 10 - v * (surs_H - 30); };
+  surs_x.fillStyle = 'rgba(248,113,113,0.25)';
+  for (var i = 0; i < surs_n; i++) {
+    if (surs_dani.actual[i] === 1) surs_x.fillRect(i * surs_krok, 0, Math.max(1, surs_krok), surs_H);
+  }
+  surs_x.strokeStyle = 'rgba(156,163,175,0.25)'; surs_x.lineWidth = 1;
+  var surs_sitka_y = [0, 0.5, 1];
+  for (var surs_k = 0; surs_k < surs_sitka_y.length; surs_k++) {
+    surs_x.beginPath();
+    surs_x.moveTo(0, surs_y(surs_sitka_y[surs_k])); surs_x.lineTo(surs_W, surs_y(surs_sitka_y[surs_k]));
+    surs_x.stroke();
+  }
+  surs_x.strokeStyle = '#e94560'; surs_x.lineWidth = 2; surs_x.beginPath();
+  for (var j = 0; j < surs_n; j++) {
+    var surs_px = j * surs_krok + surs_krok / 2, surs_py = surs_y(surs_dani.risk[j]);
+    if (j === 0) surs_x.moveTo(surs_px, surs_py); else surs_x.lineTo(surs_px, surs_py);
+  }
+  surs_x.stroke();
+  surs_x.strokeStyle = '#9ca3af'; surs_x.setLineDash([5, 5]); surs_x.beginPath();
+  surs_x.moveTo(0, surs_y(surs_dani.threshold)); surs_x.lineTo(surs_W, surs_y(surs_dani.threshold));
+  surs_x.stroke(); surs_x.setLineDash([]);
+  surs_x.fillStyle = '#9ca3af';
+  surs_x.fillText(surs_dani.t[0].slice(0, 10), 4, surs_H - 2);
+  surs_x.textAlign = 'right';
+  surs_x.fillText(surs_dani.t[surs_n-1].slice(0, 10), surs_W - 4, surs_H - 2);
+  surs_x.textAlign = 'left';
+}
+
+function surs_grafik() {
+  var surs_d = document.getElementById('surs_dni').value;
+  fetch('/api/history?days=' + surs_d).then(function(r) { return r.json(); }).then(surs_maliunok);
+}
+
+function surs_pokazaty_status(surs_j) {
+  surs_status = surs_j;
+  document.getElementById('surs_status').textContent =
+    'модель: ' + surs_j.target + ' | поріг ' + surs_j.threshold +
+    ' | дані: ' + surs_j.data_from.slice(0, 16).replace('T', ' ') + ' … ' + surs_j.data_to.slice(0, 16).replace('T', ' ') +
+    ' (UTC) | sha ' + surs_j.data_sha256;
+  var surs_pole = document.getElementById('surs_data');
+  surs_pole.min = surs_kyiv_str(surs_j.data_from);
+  surs_pole.max = surs_kyiv_str(surs_j.data_to);
+  surs_pole.value = surs_kyiv_str(surs_j.data_to);
+}
+
+function surs_onovyty_vse() {
+  fetch('/api/status').then(function(r) { return r.json(); }).then(function(surs_j) {
+    surs_pokazaty_status(surs_j);
+    surs_grafik();
+    surs_zapyt();
+  });
+}
+
+function surs_sync(surs_avto) {
+  var surs_kn = document.getElementById('surs_sync');
+  var surs_st = document.getElementById('surs_sync_stan');
+  surs_kn.disabled = true;
+  surs_st.textContent = 'синхронізація з GitHub, зачекай...';
+  surs_pokaz_pomylku('');
+  fetch('/api/sync', {method: 'POST'}).then(function(r) {
+    return r.json().then(function(surs_j) { return {kod: r.status, tilo: surs_j}; });
+  }).then(function(surs_p) {
+    surs_kn.disabled = false;
+    if (surs_p.kod !== 200) {
+      surs_st.textContent = '';
+      surs_pokaz_pomylku(surs_p.tilo.error || 'помилка синхронізації');
+      return;
+    }
+    surs_st.textContent = 'свіжі дані до ' + surs_p.tilo.data_to.slice(0, 16).replace('T', ' ') + ' (UTC)';
+    surs_onovyty_vse();
+  }).catch(function() {
+    surs_kn.disabled = false;
+    surs_st.textContent = '';
+    surs_pokaz_pomylku('сервер не відповів');
+  });
+}
+
+fetch('/api/status').then(function(r) { return r.json(); }).then(function(surs_j) {
+  surs_pokazaty_status(surs_j);
+  surs_grafik();
+  surs_zapyt();
+  var surs_davnist = Date.now() - new Date(surs_j.data_to).getTime();
+  if (surs_davnist > 24 * 3600 * 1000) surs_sync(true);
+});
+
+document.getElementById('surs_knopka').onclick = surs_zapyt;
+document.getElementById('surs_zaraz').onclick = function() {
+  if (surs_status) document.getElementById('surs_data').value = surs_kyiv_str(surs_status.data_to);
+};
+document.getElementById('surs_minus1').onclick = function() { surs_sunuty(-1); };
+document.getElementById('surs_plus1').onclick = function() { surs_sunuty(1); };
+document.getElementById('surs_sync').onclick = function() { surs_sync(false); };
+document.getElementById('surs_data').addEventListener('change', function() {
+  surs_zachip(document.getElementById('surs_data'));
+});
+</script>
+</body>
+</html>

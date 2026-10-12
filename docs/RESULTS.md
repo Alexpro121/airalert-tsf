@@ -14,13 +14,13 @@ versions: {'sklearn': '1.9.1', 'lightgbm': '4.7.0', 'pandas': '3.0.6', 'python':
 | climatology | 0.5339 | 0.4391 | 0.3791 | -0.4730 | 0.579 | 1.000 | 0.8731 | 0.16 |
 | laghour | 0.5999 | 0.5201 | 0.3499 | -0.3598 | 0.579 | 1.000 | 0.8731 | 0.1 |
 | dummy_logistic | 0.5377 | 0.4635 | 0.3784 | -0.4706 | 0.579 | 1.000 | 0.8731 | 0.14 |
-| main | 0.6381 | 0.5504 | 0.2575 | -0.0008 | 0.590 | 0.712 | 0.6840 | 0.5 |
+| main | 0.6299 | 0.5452 | 0.2593 | -0.0075 | 0.595 | 0.719 | 0.6906 | 0.5 |
 
-paired delta PR-AUC (main-laghour): {'point': 0.0382, 'mean': 0.0381, 'lo': -0.0221, 'hi': 0.0959, 'n_boot': 1000}
-paired delta PR-AUC (main-persistence): {'point': 0.035, 'mean': 0.0367, 'lo': -0.0024, 'hi': 0.076, 'n_boot': 1000}
-paired delta by split: {'onset': {'laghour': {'point': 0.0712, 'mean': 0.0711, 'lo': -0.0431, 'hi': 0.1636, 'n_boot': 1000}, 'persistence': {'point': 0.0208, 'mean': 0.0256, 'lo': -0.0311, 'hi': 0.0852, 'n_boot': 1000}, 'always': {'point': 0.0208, 'mean': 0.0256, 'lo': -0.0311, 'hi': 0.0852, 'n_boot': 1000}}, 'cont': {'laghour': {'point': 0.1007, 'mean': 0.0975, 'lo': -0.0002, 'hi': 0.1944, 'n_boot': 1000}, 'persistence': {'point': 0.0828, 'mean': 0.0852, 'lo': 0.0249, 'hi': 0.1448, 'n_boot': 1000}, 'always': {'point': 0.0828, 'mean': 0.0852, 'lo': 0.0249, 'hi': 0.1448, 'n_boot': 1000}}}
-onset: {'n': 515, 'pos_rate': 0.5495, 'pr_auc': 0.5703112700377575, 'lift': 0.0208, 'f2': 0.5968077723802915}
-cont: {'n': 205, 'pos_rate': 0.6537, 'pr_auc': 0.7364364281051317, 'lift': 0.0828, 'f2': 0.8561643835616438}
+paired delta PR-AUC (main-laghour): {'point': 0.0301, 'mean': 0.0304, 'lo': -0.0335, 'hi': 0.0906, 'n_boot': 1000}
+paired delta PR-AUC (main-persistence): {'point': 0.0268, 'mean': 0.029, 'lo': -0.0131, 'hi': 0.0692, 'n_boot': 1000}
+paired delta by split: {'onset': {'laghour': {'point': 0.062, 'mean': 0.0627, 'lo': -0.0482, 'hi': 0.1517, 'n_boot': 1000}, 'persistence': {'point': 0.0116, 'mean': 0.0172, 'lo': -0.0364, 'hi': 0.0742, 'n_boot': 1000}, 'always': {'point': 0.0116, 'mean': 0.0172, 'lo': -0.0364, 'hi': 0.0742, 'n_boot': 1000}}, 'cont': {'laghour': {'point': 0.0952, 'mean': 0.0931, 'lo': -0.0006, 'hi': 0.1887, 'n_boot': 1000}, 'persistence': {'point': 0.0773, 'mean': 0.0807, 'lo': 0.0253, 'hi': 0.1413, 'n_boot': 1000}, 'always': {'point': 0.0773, 'mean': 0.0807, 'lo': 0.0253, 'hi': 0.1413, 'n_boot': 1000}}}
+onset: {'n': 515, 'pos_rate': 0.5495, 'pr_auc': 0.5611104049223918, 'lift': 0.0116, 'f2': 0.6033287101248266}
+cont: {'n': 205, 'pos_rate': 0.6537, 'pr_auc': 0.7309811711134789, 'lift': 0.0773, 'f2': 0.863013698630137}
 
 ## Verification (raw tails)
 ```
@@ -29,7 +29,7 @@ tests/test_e2e.py: 10 warnings
     warnings.warn(
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-83 passed, 11 warnings in 188.32s (0:03:08)
+84 passed, 11 warnings in 507.43s (0:08:27)
 ```
 ```
 All checks passed!

@@ -137,9 +137,14 @@
 # CHANGELOG v9 (spec-driven round: A/B/C/D/E/F/G)
 # CHANGELOG v10 (verification round: fresh-window threshold, new features, onset significance)
 # CHANGELOG v11 (v6 audit round)
-# CHANGELOG v12 (����� ��������: A/B 4 vs 8 ��������)
+# CHANGELOG v12 (більше областей: A/B 4 vs 8 коридорів)
 - EXTENDED: Kyiv neighbours 4 -> 8 (+Zhytomyr/Cherkasy/Kharkiv/Vinnytsia); region map covers new dump names.
 - MEASURED: paired delta ext8-base4 = -0.006 CI [-0.032, +0.019] (not significant); new corridors gain share 8.5%, no metric gain. Default kept at 8 (no harm, wider coverage).
-# CHANGELOG v13 (������ ������ �������)
-- PATHS: 6 �������� (east/northeast/southeast/south/west/southwest); dist+count �� ����� + min_threat_dist (13 ���).
-- MEASURED: OOF +0.003, holdout +0.015, gain 6.7%. ������.
+# CHANGELOG v13 (трекер шляхів загрози)
+- PATHS: 6 коридорів (east/northeast/southeast/south/west/southwest); dist+count на кожен + min_threat_dist (13 фіч).
+- MEASURED: OOF +0.003, holdout +0.015, gain 6.7%. Лишено.
+
+# CHANGELOG v14 (fix path_dist + restore app)
+- FIXED path_dist брав найдальший вузол замість найближчого (див. коментар); тест test_threat_path_distance_nearest_wins_on_overlap.
+- RERUN: main 0.630/0.545/0.259/BSS -0.007, prec 0.595/rec 0.719/F2 0.691 thr 0.5; dLag +0.030 [-0.034, +0.091], dPers +0.027 [-0.013, +0.069].
+- RESTORED app.py/app.html (видалені паралельною сесією), +мапінг path_*-назв в UI.

@@ -1,14 +1,12 @@
 # Reflection (~100 слів)
 
-What went wrong? Early pipeline tuned the F2 threshold on train predictions and
-used a fixed precision guardrail, collapsing to an always-alert rule on hot months.
-Target edges were NaN-masked, but train/test had no embargo, and calendar features
-used UTC instead of Kyiv time.
+What went wrong? The first pipeline tuned its threshold on train predictions and
+collapsed to always-alert on hot months; single-class folds crashed it; a distance
+feature measured the farthest node, not the nearest.
 
-How did I adjust? Added a 3h embargo on the split and in folds, Kyiv-local calendar
-features, a data-relative guardrail max(0.25, 1.2×prevalence), clipped hours_since_last
-with a has_history flag, persistence/climatology/always baselines, and onset metrics.
+How did I adjust? Adversarial audits instead of trusting green tests: 3h embargo,
+Kyiv-local calendar, strict degenerate guards with a flagged 0.5 fallback, 8 threat
+corridors plus path features, sha256 provenance, honest bootstrap intervals.
 
-Why is it better? The pipeline is causal within tested checks, honest about drift
-(OOF base 0.22 vs test 0.58, CIs overlap), and LightGBM still leads on onset PR-AUC
-(0.622 vs 0.556 continuation) with interpretable SHAP attributions.
+Why is it better? It is causal and honest about drift (0.22 vs 0.58). LightGBM
+reaches PR-AUC 0.630 against 0.600 for the best baseline, plus a working web demo.

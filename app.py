@@ -188,6 +188,8 @@ def surs_riadok_dlia(surs_ts: pd.Timestamp, surs_stsen: str) -> tuple:
         else:
             surs_dod[surs_c] = np.full(len(surs_mayb), surs_hvist[-1])
     surs_rozsh = pd.concat([surs_sitka, pd.DataFrame(surs_dod, index=surs_mayb)])
+    # coverage-mask NaNs in the tail would poison rolling windows near grid end
+    surs_rozsh = surs_rozsh.fillna(0)
     surs_X2, _ = make_features(
         surs_rozsh, surs_meta.get("target", "Kyiv"), surs_cfg.neighbors,
         horizon=surs_cfg.horizon_h, lags=surs_cfg.lags, windows=surs_cfg.windows,

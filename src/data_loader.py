@@ -224,6 +224,21 @@ _REGION_MAP = {
     "luhansk_oblast": "Luhansk_Oblast",
     "odesa_oblast": "Odesa_Oblast",
     "zaporizhzhia_oblast": "Zaporizhzhia_Oblast",
+    "chernivtsi_oblast": "Chernivtsi_Oblast",
+    "ivanofrankivsk_oblast": "IvanoFrankivsk_Oblast",
+    "ivano-frankivsk_oblast": "IvanoFrankivsk_Oblast",
+    "khmelnytskyi_oblast": "Khmelnytskyi_Oblast",
+    "kirovohrad_oblast": "Kirovohrad_Oblast",
+    "lviv_oblast": "Lviv_Oblast",
+    "mykolaiv_oblast": "Mykolaiv_Oblast",
+    "rivne_oblast": "Rivne_Oblast",
+    "ternopil_oblast": "Ternopil_Oblast",
+    "volyn_oblast": "Volyn_Oblast",
+    "zakarpattia_oblast": "Zakarpattia_Oblast",
+    "chernihiv_oblast": "Chernihiv",
+    "sumy_oblast": "Sumy",
+    "poltava_oblast": "Poltava",
+    "kyiv_city": "Kyiv",
 }
 
 

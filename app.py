@@ -150,15 +150,56 @@ def surs_rozibraty_chas(surs_tekst: str) -> pd.Timestamp:
     return pd.Timestamp(surs_dt)
 
 
-def surs_prognoz(surs_ts: pd.Timestamp) -> dict:
-    if surs_ts < surs_min_chas or surs_ts > surs_max_chas:
-        raise ValueError(
-            f"прогноз можливий лише {surs_min_chas} … {surs_max_chas} (UTC); "
-            f"свіжіші дані: uv run python main.py --real"
-        )
-    surs_riadok = surs_X.loc[surs_ts:surs_ts]
+SURS_STSENARII = {
+    "tyho": "тиша далі (тривог нема)",
+    "povtor": "повтор останньої доби",
+    "yak_zaraz": "стани зависли як зараз",
+}
+
+SURS_MAKS_PLUS = pd.Timedelta(days=30)
+
+
+def surs_riadok_dlia(surs_ts: pd.Timestamp, surs_stsen: str) -> tuple:
+    if surs_ts < surs_min_chas:
+        raise ValueError(f"раніше ніж {surs_min_chas} (UTC) не рахую")
+    if surs_ts <= surs_max_chas:
+        surs_riadok = surs_X.loc[surs_ts:surs_ts]
+        if surs_riadok.empty:
+            raise ValueError(f"нема години {surs_ts} в сітці")
+        return surs_riadok, False
+    if surs_ts > surs_sitka.index.max() + SURS_MAKS_PLUS:
+        raise ValueError("далі ніж +30 днів від даних не рахую")
+    if surs_stsen not in SURS_STSENARII:
+        raise ValueError(f"сценарій має бути одним з {sorted(SURS_STSENARII)}")
+    from src.feature_engineering import make_features
+
+    surs_kinec = surs_sitka.index.max()
+    surs_mayb = pd.date_range(surs_kinec + pd.Timedelta(hours=1),
+                              surs_ts + pd.Timedelta(hours=3), freq="1h")
+    surs_dod = {}
+    for surs_c in surs_sitka.columns:
+        surs_hvist = surs_sitka[surs_c].fillna(0).values
+        if surs_stsen == "tyho":
+            surs_dod[surs_c] = np.zeros(len(surs_mayb))
+        elif surs_stsen == "povtor":
+            surs_doba = surs_hvist[-24:] if len(surs_hvist) >= 24 else surs_hvist
+            surs_q = int(np.ceil(len(surs_mayb) / len(surs_doba)))
+            surs_dod[surs_c] = np.tile(surs_doba, surs_q)[:len(surs_mayb)]
+        else:
+            surs_dod[surs_c] = np.full(len(surs_mayb), surs_hvist[-1])
+    surs_rozsh = pd.concat([surs_sitka, pd.DataFrame(surs_dod, index=surs_mayb)])
+    surs_X2, _ = make_features(
+        surs_rozsh, surs_meta.get("target", "Kyiv"), surs_cfg.neighbors,
+        horizon=surs_cfg.horizon_h, lags=surs_cfg.lags, windows=surs_cfg.windows,
+    )
+    surs_riadok = surs_X2.loc[surs_ts:surs_ts]
     if surs_riadok.empty:
-        raise ValueError(f"нема години {surs_ts} в сітці")
+        raise ValueError(f"не вийшов рядок для {surs_ts}")
+    return surs_riadok, True
+
+
+def surs_prognoz(surs_ts: pd.Timestamp, surs_stsen: str = "tyho") -> dict:
+    surs_riadok, surs_sym = surs_riadok_dlia(surs_ts, surs_stsen)
     surs_start = time.perf_counter()
     surs_p = surs_ryzyk(surs_model.predict_proba(surs_riadok[surs_fichy]))[0]
     surs_ms = round((time.perf_counter() - surs_start) * 1000, 1)
@@ -182,6 +223,8 @@ def surs_prognoz(surs_ts: pd.Timestamp) -> dict:
         "risk_pct": round(surs_ryzyk_v * 100, 1),
         "threshold": surs_porig,
         "alarm": bool(surs_ryzyk_v >= surs_porig),
+        "simulated": surs_sym,
+        "scenario": SURS_STSENARII[surs_stsen] if surs_sym else None,
         "context": {
             "lag_1": int(float(surs_riadok["lag_1"].iloc[0])) if "lag_1" in surs_riadok else None,
             "kyiv_hour": int(surs_god),
@@ -200,10 +243,8 @@ def surs_prognoz(surs_ts: pd.Timestamp) -> dict:
     }
 
 
-def surs_poyasnennya(surs_ts: pd.Timestamp) -> dict:
-    surs_riadok = surs_X.loc[surs_ts:surs_ts]
-    if surs_riadok.empty:
-        raise ValueError(f"нема години {surs_ts} в сітці")
+def surs_poyasnennya(surs_ts: pd.Timestamp, surs_stsen: str = "tyho") -> dict:
+    surs_riadok, _ = surs_riadok_dlia(surs_ts, surs_stsen)
     surs_baza = pd.DataFrame([{c: surs_mediany[c] for c in surs_fichy}])
     surs_baz_ryzyk = round(float(surs_ryzyk(surs_model.predict_proba(surs_baza))[0]), 4)
     surs_full = round(float(surs_ryzyk(surs_model.predict_proba(surs_riadok[surs_fichy]))[0]), 4)
@@ -284,7 +325,8 @@ class SursRuky(BaseHTTPRequestHandler):
                 if not surs_ts_raw:
                     self.surs_json(400, {"error": "дай ts, наприклад ?ts=2026-10-09T20:00"})
                     return
-                self.surs_json(200, surs_prognoz(surs_rozibraty_chas(surs_ts_raw)))
+                surs_stsen = (surs_q.get("scen") or ["tyho"])[0]
+                self.surs_json(200, surs_prognoz(surs_rozibraty_chas(surs_ts_raw), surs_stsen))
             elif surs_shliah == "/api/history":
                 try:
                     surs_d = int((surs_q.get("days") or ["3"])[0])
@@ -296,7 +338,8 @@ class SursRuky(BaseHTTPRequestHandler):
                 if not surs_ts_raw:
                     self.surs_json(400, {"error": "дай ts, наприклад ?ts=2026-10-09T20:00"})
                     return
-                self.surs_json(200, surs_poyasnennya(surs_rozibraty_chas(surs_ts_raw)))
+                surs_stsen = (surs_q.get("scen") or ["tyho"])[0]
+                self.surs_json(200, surs_poyasnennya(surs_rozibraty_chas(surs_ts_raw), surs_stsen))
             else:
                 self.surs_json(404, {"error": "нема такої сторінки"})
         except ValueError as surs_e:

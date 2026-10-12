@@ -25,7 +25,7 @@
   #surs_velyke { font-size: 2.2em; font-weight: 800; }
   .zelen { color: var(--zelen); } .zhovt { color: var(--zhovt); } .cherv { color: var(--cherv); }
   .beidzh { display: inline-block; padding: 7px 14px; border-radius: 20px; font-weight: bold; margin-top: 6px; }
-  .beidzh.tryvoga { background: #7f1d1d; } .beidzh.tyho { background: #14532d; }
+  .beidzh.tryvoga { background: #7f1d1d; } .beidzh.tyho { background: #14532d; } .beidzh.sym { background: #713f12; }
   table.ctx { border-collapse: collapse; margin-top: 6px; font-size: 0.95em; }
   table.ctx td { padding: 4px 12px 4px 0; }
   table.ctx td:first-child { color: var(--siry); }
@@ -52,6 +52,11 @@
   <h2>Запит</h2>
   <div class="riadok">
     <label>Година (київський час): <input type="datetime-local" id="surs_data" step="3600"></label>
+    <label>Якщо дати нема в даних: <select id="surs_stsen">
+      <option value="tyho">тиша далі</option>
+      <option value="povtor">повтор останньої доби</option>
+      <option value="yak_zaraz">стани зависли як зараз</option>
+    </select></label>
     <button id="surs_knopka">Прогноз</button>
     <button class="vtor" id="surs_zaraz">Останні дані</button>
     <button class="vtor" id="surs_minus1">−1 год</button>
@@ -111,7 +116,6 @@ function surs_kyiv_str(surs_iso) {
 
 function surs_zachip(surs_el) {
   if (surs_el.min && surs_el.value && surs_el.value < surs_el.min) surs_el.value = surs_el.min;
-  if (surs_el.max && surs_el.value && surs_el.value > surs_el.max) surs_el.value = surs_el.max;
 }
 
 function surs_sunuty(surs_god) {
@@ -222,7 +226,8 @@ function surs_zapyt() {
     if (surs_status) { surs_pole.value = surs_kyiv_str(surs_status.data_to); surs_v = surs_pole.value; }
     else { surs_pokaz_pomylku('обери годину'); return; }
   }
-  fetch('/api/predict?ts=' + encodeURIComponent(surs_v)).then(function(r) {
+  var surs_sc = document.getElementById('surs_stsen').value;
+  fetch('/api/predict?ts=' + encodeURIComponent(surs_v) + '&scen=' + surs_sc).then(function(r) {
     return r.json().then(function(surs_j) { return {kod: r.status, tilo: surs_j}; });
   }).then(function(surs_p) {
     if (surs_p.kod !== 200) { surs_pokaz_pomylku(surs_p.tilo.error || 'помилка'); return; }
@@ -233,11 +238,13 @@ function surs_zapyt() {
     surs_vv.textContent = surs_j.risk_pct + ' %';
     surs_vv.className = surs_j.risk < 0.33 ? 'zelen' : (surs_j.risk < 0.66 ? 'zhovt' : 'cherv');
     var surs_b = document.getElementById('surs_beidzh');
-    if (surs_j.alarm) { surs_b.textContent = 'ЙМОВІРНА ТРИВОГА'; surs_b.className = 'beidzh tryvoga'; }
+    if (surs_j.simulated) { surs_b.textContent = 'СИМУЛЯЦІЯ'; surs_b.className = 'beidzh sym'; }
+    else if (surs_j.alarm) { surs_b.textContent = 'ЙМОВІРНА ТРИВОГА'; surs_b.className = 'beidzh tryvoga'; }
     else { surs_b.textContent = 'спокійно'; surs_b.className = 'beidzh tyho'; }
     document.getElementById('surs_detali').textContent =
       surs_j.region + ', ' + surs_j.timestamp_kyiv.slice(0, 16).replace('T', ' ') +
-      ' → ризик що тривога буде хоч в одну з ' + surs_j.horizon_h + ' годин. Поріг: ' + surs_j.threshold;
+      ' → ризик що тривога буде хоч в одну з ' + surs_j.horizon_h + ' годин. Поріг: ' + surs_j.threshold +
+      (surs_j.simulated ? ' Симуляція за сценарієм «' + surs_j.scenario + '» — не прогноз, а гра.' : '');
     var surs_c = surs_j.context;
     var surs_sus = surs_c.active_neighbors.length ? surs_c.active_neighbors.join(', ') : 'нема';
     document.getElementById('surs_ctx').innerHTML =
@@ -251,7 +258,8 @@ function surs_zapyt() {
 }
 
 function surs_chomu(surs_v) {
-  fetch('/api/explain?ts=' + encodeURIComponent(surs_v)).then(function(r) { return r.json(); }).then(function(surs_j) {
+  var surs_sc = document.getElementById('surs_stsen').value;
+  fetch('/api/explain?ts=' + encodeURIComponent(surs_v) + '&scen=' + surs_sc).then(function(r) { return r.json(); }).then(function(surs_j) {
     if (surs_j.error) return;
     document.getElementById('surs_chomu_karta').style.display = 'block';
     document.getElementById('surs_baza').textContent =
@@ -324,7 +332,7 @@ function surs_pokazaty_status(surs_j) {
     ' (UTC) | sha ' + surs_j.data_sha256;
   var surs_pole = document.getElementById('surs_data');
   surs_pole.min = surs_kyiv_str(surs_j.data_from);
-  surs_pole.max = surs_kyiv_str(surs_j.data_to);
+  surs_pole.removeAttribute('max');
   surs_pole.value = surs_kyiv_str(surs_j.data_to);
 }
 
